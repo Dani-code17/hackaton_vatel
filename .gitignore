@@ -1,0 +1,89 @@
+# ============================================================
+#  Cantine de Vatel — .gitignore
+# ============================================================
+
+# ---------- Dependances ----------
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+jspm_packages/
+
+# ---------- Build / artefacts ----------
+dist/
+dist-ssr/
+build/
+out/
+.output/
+.vite/
+.cache/
+*.tsbuildinfo
+
+# ---------- Variables d'environnement (NE JAMAIS COMMITTER) ----------
+.env
+.env.*
+!.env.example
+*.local
+
+# ---------- Supabase / CLI ----------
+.supabase/
+supabase/.branches
+supabase/.temp
+supabase/.env
+*.db
+*.sqlite
+*.sqlite3
+
+# ---------- Logs ----------
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.vite-inspect/
+
+# ---------- Tests / couverture ----------
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+blob-report/
+
+# ---------- Editeurs / IDE ----------
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.vscode/mcp.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ---------- OS ----------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ---------- Documents organisateur (ne pas publier) ----------
+Guide des participants Cantine Vatel.pdf
+
+# ---------- Divers ----------
+*.pem
+.eslintcache
+.oxlintcache
+.vercel
+.turbo
