@@ -102,13 +102,15 @@ combien de repas préparer.
 ```
 hackaton_vatel/
 ├── public/                  # fichiers statiques servis tels quels
+│   └── icons/               # icônes PWA (192, 512, maskable, apple-touch)
 ├── src/
 │   ├── main.jsx             # point d'entrée React
 │   ├── App.jsx              # racine de l'application
 │   └── index.css            # import Tailwind + thème
 ├── index.html
-├── vite.config.js           # plugins React + Tailwind
+├── vite.config.js           # plugins React + Tailwind + PWA
 ├── .env.example             # variables d'environnement attendues
+├── .nvmrc                   # version Node attendue (22)
 ├── .gitignore
 └── README.md
 ```
@@ -124,7 +126,7 @@ hackaton_vatel/
 
 | Outil | Version utilisée | Vérification |
 | --- | --- | --- |
-| Node.js | ≥ 20.19 (LTS recommandé) | `node -v` |
+| Node.js | ≥ 22.12 (LTS) | `node -v` |
 | npm | ≥ 10 | `npm -v` |
 | Git | ≥ 2.40 | `git --version` |
 
@@ -159,18 +161,29 @@ L'application est alors disponible sur **http://localhost:5173**.
 
 ### Configuration Supabase
 
-1. Créer un projet sur [supabase.com](https://supabase.com).
-2. Récupérer `Project URL` et `anon public key` dans **Project Settings → API**.
-3. Les coller dans le fichier `.env` à la racine :
+Le projet Supabase de démonstration existe déjà : **cantine-vatel** (région `eu-west-3`).
+Les valeurs attendues dans `.env` sont :
 
 ```env
 VITE_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+VITE_SUPABASE_ANON_KEY=sb_publishable_...   # ou l'ancienne clé anon (JWT)
 ```
 
-> ⚠️ La clé `anon` est publique par conception : la protection des données repose sur les
+Pour repartir d'un projet vierge :
+
+1. Créer un projet sur [supabase.com](https://supabase.com).
+2. Récupérer `Project URL` et la clé publique (`publishable` ou `anon`) dans **Project Settings → API**.
+3. Les coller dans le fichier `.env` à la racine.
+
+> ⚠️ La clé publique est exposée par conception : la protection des données repose sur les
 > politiques **RLS** définies dans PostgreSQL. La clé `service_role` ne doit **jamais**
 > apparaître dans le front ni être commitée.
+
+### PWA
+
+L'application est installable (manifest + service worker générés par `vite-plugin-pwa`).
+Le service worker n'est actif qu'en production : pour le tester, lancer `npm run build`
+puis `npm run preview`.
 
 ### Déploiement (Vercel)
 
