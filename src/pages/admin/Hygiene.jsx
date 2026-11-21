@@ -107,7 +107,7 @@ export default function HygienePage() {
     <div className="space-y-5">
       {message ? <Alert tone={message.tone}>{message.text}</Alert> : null}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4">
         <Card>
           <SectionTitle>Checklist du jour</SectionTitle>
           <form onSubmit={submit} className="space-y-3">

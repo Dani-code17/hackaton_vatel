@@ -108,7 +108,7 @@ export default function SupervisionPage() {
 
       <SectionTitle>Établissements</SectionTitle>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4">
         {schools.map((school) => {
           const schoolSupplies = supplies.filter((item) => item.school_id === school.id)
           const lowStock = schoolSupplies.filter(

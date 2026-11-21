@@ -154,7 +154,7 @@ export default function StockPage() {
         <Alert tone="amber">Consultation seule : le gérant saisit les réceptions et les rations.</Alert>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3">
         <Stat label="Articles" value={supplies.length} />
         <Stat
           label="Sous le seuil"
@@ -170,7 +170,7 @@ export default function StockPage() {
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4">
         <Card>
           <SectionTitle>Réception des vivres</SectionTitle>
           <form onSubmit={submitReception} className="space-y-3">

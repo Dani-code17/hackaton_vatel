@@ -99,7 +99,7 @@ export default function MaterielPage() {
         </Alert>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+      <div className="grid gap-4">
         {canWrite ? (
           <Card>
             <SectionTitle>Ajouter un équipement</SectionTitle>

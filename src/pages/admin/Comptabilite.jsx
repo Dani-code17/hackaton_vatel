@@ -124,7 +124,7 @@ export default function ComptabilitePage() {
         </p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+      <div className="grid gap-4">
         <Card>
           <SectionTitle>Saisie du jour</SectionTitle>
           <form onSubmit={saveEntry} className="space-y-3">

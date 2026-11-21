@@ -150,14 +150,14 @@ export default function DashboardPage() {
         </Alert>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3">
         <Stat label="Repas servis" value={served || accounting?.served_count || 0} tone="teal" />
         <Stat label="En attente" value={booked} hint="réservés non pointés" />
         <Stat label="Chiffre du jour" value={fcfa(accounting?.revenue)} tone="teal" />
         <Stat label={secondMoney.label} value={secondMoney.value} hint={secondMoney.hint} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4">
         <Card>
           <SectionTitle>Journal du jour — {config.short}</SectionTitle>
           <dl className="space-y-2 text-sm">

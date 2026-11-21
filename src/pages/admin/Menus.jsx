@@ -95,7 +95,7 @@ export default function MenusPage() {
         <Alert tone="amber">Consultation seule : seul le gérant peut modifier les menus.</Alert>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4">
         {canWrite ? (
           <Card>
             <SectionTitle>Ajouter un plat</SectionTitle>
@@ -172,7 +172,7 @@ export default function MenusPage() {
           </Card>
         ) : null}
 
-        <Card className={canWrite ? '' : 'lg:col-span-2'}>
+        <Card className={canWrite ? '' : ''}>
           <SectionTitle>Menus à venir (2 semaines)</SectionTitle>
           {meals.length === 0 ? (
             <Empty title="Aucun plat publié" description="Ajoutez un plat pour ouvrir les réservations." />
