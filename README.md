@@ -32,7 +32,7 @@ combien de repas préparer.
 | Manque de transparence (menus, tarifs) | Menu de la semaine et prix consultables en un clic |
 | Gestion manuelle fastidieuse | Tableau de bord temps réel et statistiques automatiques |
 
-### Les trois profils utilisateurs
+### Les profils utilisateurs
 
 | Profil | Besoins couverts |
 | --- | --- |
@@ -40,22 +40,42 @@ combien de repas préparer.
 | 👨‍👩‍👧 **Parent** | Recharger le compte cantine de son enfant, suivre ce qu'il mange, recevoir une alerte de solde bas |
 | 💼 **Administrateur (gérant)** | Créer et modifier les menus, visualiser les commandes du jour en temps réel, gérer les stocks, consulter un tableau de bord statistique |
 
-### Périmètre livré (MVP)
+Le terrain impose deux profils supplémentaires, implémentés dans la même application :
 
-**Obligatoire**
-- [ ] Inscription et connexion
-- [ ] Consultation du menu de la semaine
-- [ ] Réservation d'un repas
-- [ ] Affichage du solde et de l'historique
-- [ ] Création / modification des menus (admin)
-- [ ] Visualisation des commandes du jour (admin)
-- [ ] Tableau de bord avec statistiques de base (admin)
+| Profil | Besoins couverts |
+| --- | --- |
+| ✍️ **Directeur** | Valider et signer électroniquement la fiche école, l'assiduité et le journal comptable |
+| 🛰️ **Conseiller DCS** | Contrôler à distance plusieurs écoles : stocks, preuves photos d'hygiène, état des versements |
 
-**Bonus (si le MVP est terminé)**
-- [ ] Paiement Mobile Money simulé (Wave / Orange Money)
-- [ ] Pass QR code + alerte allergies au comptoir
-- [ ] Notifications en temps réel
-- [ ] Notation des plats
+### Périmètre livré
+
+**MVP — fonctionnel**
+
+- [x] Connexion sécurisée (Supabase Auth) avec redirection par rôle
+- [x] Consultation du menu de la semaine
+- [x] Réservation d'un repas avec débit automatisé du solde
+- [x] Affichage du solde et de l'historique des mouvements
+- [x] Création / suppression des menus (gérant)
+- [x] Visualisation des commandes du jour en temps réel
+- [x] Tableau de bord avec statistiques de base
+
+**Bonus — livrés**
+
+- [x] Paiement Mobile Money simulé (Wave / Orange Money)
+- [x] Pass QR code à valider au comptoir, avec alerte allergies
+- [x] Notifications temps réel (flux Supabase Realtime)
+- [x] Notation des plats
+- [x] Mise en cache locale du menu (mode faible connexion)
+
+**Spécificités terrain (cahier gérant / DCS)**
+
+- [x] Calculateur de rations qui décrémente le stock automatiquement
+- [x] Réception des vivres par origine (Gouvernement, Communauté, Organisation)
+- [x] Comptabilité journalière automatique (25 F / 40 % / 5 F)
+- [x] Signature électronique du journal et de la fiche école par le directeur
+- [x] Contrôle hygiène à distance avec photo horodatée
+- [x] Supervision multi-établissements pour le conseiller DCS
+- [x] Export CSV de la fiche d'assiduité
 
 ---
 
@@ -101,22 +121,60 @@ combien de repas préparer.
 
 ```
 hackaton_vatel/
-├── public/                  # fichiers statiques servis tels quels
-│   └── icons/               # icônes PWA (192, 512, maskable, apple-touch)
+├── public/
+│   └── icons/                 # icônes PWA (192, 512, maskable, apple-touch)
 ├── src/
-│   ├── main.jsx             # point d'entrée React
-│   ├── App.jsx              # racine de l'application
-│   └── index.css            # import Tailwind + thème
-├── index.html
-├── vite.config.js           # plugins React + Tailwind + PWA
-├── .env.example             # variables d'environnement attendues
-├── .nvmrc                   # version Node attendue (22)
-├── .gitignore
-└── README.md
+│   ├── components/            # shell de navigation + kit UI partagé
+│   ├── context/               # AuthContext (session + profil applicatif)
+│   ├── lib/                   # client Supabase, formats (FCFA, dates, rôles)
+│   ├── pages/
+│   │   ├── eleve/             # menu, pass repas, compte
+│   │   ├── parent/            # suivi de l'enfant, historique
+│   │   ├── admin/             # cahier de gestion (6 onglets)
+│   │   └── dcs/               # supervision multi-écoles
+│   ├── App.jsx                # routes et gardes par rôle
+│   └── index.css              # import Tailwind + thème
+├── supabase/migrations/       # schéma, RLS, fonctions et données de démo
+├── vercel.json                # build + fallback SPA
+└── vite.config.js             # plugins React + Tailwind + PWA
 ```
 
-> Les dossiers `components/`, `pages/`, `lib/`, `hooks/` seront créés au fil du développement
-> pendant le hackathon.
+### Modèle de données
+
+| Table | Rôle |
+| --- | --- |
+| `schools` | Établissement, effectif, validation du directeur |
+| `profiles` | Rôle applicatif, école, allergies, solde, lien parent/enfant |
+| `meals` | Plats du jour, prix, allergènes, capacité |
+| `reservations` | Réservation, statut, pass QR unique |
+| `wallet_transactions` | Recharges, débits repas, remboursements |
+| `meal_ratings` | Notation des plats (1 à 5) |
+| `supplies` | Vivres, stock, seuil d'alerte, ration par personne |
+| `supply_receptions` / `supply_movements` | Entrées par origine et sorties de stock |
+| `daily_accounting` | Comptabilité journalière (colonnes calculées) |
+| `kitchen_items` | État du matériel de cuisine |
+| `hygiene_checks` | Checklist, score et photo horodatée |
+| `attendance_records` | Fiche d'assiduité et évolution des effectifs |
+
+### Règles métier dans la base
+
+- `Recette_Jour = rationnaires × 25 F`
+- `Etat_Versements = recette × 40 %`
+- `Salaire_Cantiniere = rationnaires × 5 F`
+- `Fonds_Fonctionnement_Local = recette − versements − salaire`
+
+Ces valeurs sont des **colonnes générées** PostgreSQL : elles ne peuvent pas être saisies à la
+main ni devenir incohérentes.
+
+### Accès par rôle (RLS)
+
+| Rôle | Portée |
+| --- | --- |
+| `eleve` | Ses réservations, son solde, les menus de son école |
+| `parent` | Les données de ses enfants uniquement |
+| `gerant` | Écriture sur son établissement (menus, vivres, hygiène, comptabilité) |
+| `directeur` | Lecture de son établissement + signature électronique |
+| `conseiller_dcs` | Lecture de tous les établissements |
 
 ---
 
@@ -179,11 +237,33 @@ Pour repartir d'un projet vierge :
 > politiques **RLS** définies dans PostgreSQL. La clé `service_role` ne doit **jamais**
 > apparaître dans le front ni être commitée.
 
-### PWA
+### Base de données
+
+Les migrations SQL sont versionnées dans `supabase/migrations/` et s'appliquent dans l'ordre :
+
+| Fichier | Contenu |
+| --- | --- |
+| `20261121000100_schema.sql` | Tables, contraintes et colonnes générées |
+| `20261121000200_rls.sql` | Row Level Security, helpers et bucket photos |
+| `20261121000300_functions.sql` | Fonctions métier et trigger de profil |
+| `20261121000400_seed.sql` | École, menus, stocks et comptes de démonstration |
+| `20261121000500_parent_reservations.sql` | Correctif d'accès parent → enfant |
+
+Application via le **SQL Editor** du dashboard Supabase ou avec la CLI :
+
+```powershell
+npx supabase link --project-ref <project-ref>
+npx supabase db push
+```
+
+### PWA et mode faible connexion
 
 L'application est installable (manifest + service worker générés par `vite-plugin-pwa`).
 Le service worker n'est actif qu'en production : pour le tester, lancer `npm run build`
 puis `npm run preview`.
+
+Le menu de la semaine est mis en cache dans `localStorage` : si le réseau tombe, l'élève
+continue de consulter les plats et voit un bandeau « Hors ligne ».
 
 ### Déploiement (Vercel)
 
@@ -196,24 +276,41 @@ puis `npm run preview`.
 
 ## 🔑 Comptes de test pour le jury
 
-Trois comptes de démonstration couvrent les trois profils. Ils seront créés le jour du
-hackathon et renseignés ici.
+Cinq profils sont préchargés. Mot de passe identique pour tous : **`Demo1234!`**
+(un bouton sur l'écran de connexion remplit automatiquement les identifiants).
 
-| Profil | Email | Mot de passe | Ce qu'il faut tester |
-| --- | --- | --- | --- |
-| 🎓 Élève / Employé | `eleve@vatel.test` | `Demo1234!` | Menu de la semaine, réservation, solde, historique |
-| 👨‍👩‍👧 Parent | `parent@vatel.test` | `Demo1234!` | Rechargement du compte, suivi des repas, alerte solde bas |
-| 💼 Administrateur | `admin@vatel.test` | `Demo1234!` | Création de menu, commandes du jour, tableau de bord |
+| Profil | Email | Ce qu'il faut tester |
+| --- | --- | --- |
+| 🎓 Élève | `eleve@vatel.test` | Menu de la semaine, réservation, pass QR, solde, notation |
+| 🎓 Élève (2) | `eleve2@vatel.test` | Second compte pour peupler la file d'attente |
+| 👨‍👩‍👧 Parent | `parent@vatel.test` | Suivi de l'enfant, alerte allergie, recharge Wave / Orange Money |
+| 💼 Gérant | `gerant@vatel.test` | Menus, commandes du jour, vivres, rations, comptabilité, hygiène |
+| ✍️ Directeur | `directeur@vatel.test` | Signature du journal comptable et de la fiche école |
+| 🛰️ Conseiller DCS | `dcs@vatel.test` | Supervision à distance des établissements |
 
-> Scénario de démonstration recommandé : se connecter en **élève**, réserver le repas du
-> jour, puis se connecter en **admin** pour voir la commande apparaître en temps réel.
+### Scénario de démonstration (3 minutes)
+
+1. **Élève** — réserver le repas du jour (le solde passe de 450 F à 425 F), ouvrir le **pass QR**.
+2. **Gérant → Commandes** — la réservation apparaît en temps réel ; cliquer **Pointer** :
+   l'alerte allergie s'affiche et la recette du jour est recalculée.
+3. **Gérant → Stock & rations** — saisir 200 rationnaires : le besoin par article est calculé,
+   le stock est décrémenté, et un article sous le seuil bloque l'action.
+4. **Gérant → Comptabilité** — le journal du jour affiche 25 F de recette, 10 F de versements
+   et 5 F de salaire cantinière par repas.
+5. **Directeur** — signer électroniquement le journal et la fiche école.
+6. **Conseiller DCS** — vérifier la même école à distance : stocks, score hygiène, versements.
+
+> Le passage d'un profil à l'autre se fait avec **Quitter** en haut à droite ; la connexion
+> prend deux clics grâce aux boutons de démonstration.
 
 ---
 
 ## 🧪 Qualité
 
-- `npm run lint` avant chaque commit.
-- Commits réguliers et messages explicites (`feat:`, `fix:`, `docs:`).
+- `npm run lint` (oxlint) et `npm run build` passent avant chaque commit.
+- Messages de commit conventionnels et explicites (`feat:`, `fix:`, `docs:`, `chore:`).
+- Accès aux données contrôlé par RLS, pas seulement par l'interface.
+- Calculs financiers délégués à PostgreSQL (colonnes générées) pour éviter toute divergence.
 - Branche `main` toujours déployable.
 
 ---
