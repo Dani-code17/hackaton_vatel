@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { formatDay, formatTime, todayISO } from '../../lib/format'
 import { useLanguage } from '../../i18n/language'
 import FlashOfferCard from '../../components/FlashOfferCard'
+import QrScanner from '../../components/QrScanner'
 import { Alert, Badge, Button, Card, Empty, Field, Input, SectionTitle, Spinner, Stat } from '../../components/ui'
 
 export default function CommandesPage() {
@@ -98,7 +99,11 @@ export default function CommandesPage() {
 
       <Card>
         <SectionTitle>{t('orders.qrScan')}</SectionTitle>
-        <form onSubmit={manualServe} className="flex flex-col gap-2 sm:flex-row sm:items-end">
+        <QrScanner onScan={(value) => serve(value.trim(), null)} busy={Boolean(busyId)} />
+        <p className="my-2 text-center font-display text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
+          {t('scan.orManual')}
+        </p>
+        <form onSubmit={manualServe} className="flex flex-col gap-2">
           <div className="flex-1">
             <Field label={t('orders.passCode')} hint="scannez ou saisissez le code affiché sur le téléphone de l'élève">
               <Input

@@ -92,7 +92,11 @@ export default function MenuPage() {
   }, [load])
 
   const reservedIds = useMemo(
-    () => new Set(reservations.filter((r) => r.status !== 'annulee').map((r) => r.meal_id)),
+    () => new Set(reservations.filter((r) => r.status === 'reservee').map((r) => r.meal_id)),
+    [reservations],
+  )
+  const servedIds = useMemo(
+    () => new Set(reservations.filter((r) => r.status === 'servie').map((r) => r.meal_id)),
     [reservations],
   )
 
@@ -272,6 +276,7 @@ export default function MenuPage() {
 
           {dayMeals.map((meal) => {
             const reserved = reservedIds.has(meal.id)
+            const served = servedIds.has(meal.id)
             const conflicts = allergyConflicts(meal.allergens, myAllergies)
             const discountPct = offer && meal.service_date === today ? offer.discount_pct : 0
             const payablePrice = Math.round((meal.price * (100 - discountPct)) / 100)
@@ -311,8 +316,8 @@ export default function MenuPage() {
 
                   {conflicts.length > 0 ? (
                     <div className="mt-2">
-                      <Alert tone="rose">
-                        {t('menu.allergyWarning', { list: conflicts.join(', ') })}
+                      <Alert tone="rose" title={t('menu.blockedTitle')}>
+                        {t('menu.blockedHint', { list: conflicts.join(', ') })}
                       </Alert>
                     </div>
                   ) : null}
@@ -332,9 +337,17 @@ export default function MenuPage() {
                       </p>
                     </div>
 
-                    {reserved ? (
+                    {served ? (
+                      <span className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-slate-100 px-3 font-display text-[12px] font-semibold text-slate-500">
+                        <Icon name="done_all" className="text-[17px]" /> {t('pass.served')}
+                      </span>
+                    ) : reserved ? (
                       <span className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-brand-50 px-3 font-display text-[12px] font-semibold text-brand-900">
                         <Icon name="check_circle" className="text-[17px]" /> {t('menu.reserved')}
+                      </span>
+                    ) : conflicts.length > 0 ? (
+                      <span className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-coral-100 px-3 font-display text-[11px] font-bold text-coral-700 ring-1 ring-coral-300">
+                        <Icon name="block" className="text-[16px]" filled /> {t('menu.blocked')}
                       </span>
                     ) : (
                       <Button

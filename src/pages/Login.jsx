@@ -7,6 +7,7 @@ import { useLanguage } from '../i18n/language'
 import LanguageSwitch from '../components/LanguageSwitch'
 import { Alert, Button, Card, Field, Icon, Input } from '../components/ui'
 
+// Trois comptes seulement : le jury doit voir le parcours élève, parent et gérant.
 const DEMO_ACCOUNTS = [
   { role: 'eleve', email: 'eleve@vatel.test' },
   { role: 'parent', email: 'parent@vatel.test' },

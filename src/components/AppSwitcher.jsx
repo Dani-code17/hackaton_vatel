@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useUniverse } from '../context/UniverseContext'
 import { supabase } from '../lib/supabase'
 import { cx } from '../lib/format'
-import { UNIVERSE_ORDER, UNIVERSES } from '../lib/universes'
+import { MULTI_UNIVERSE_ENABLED, UNIVERSE_ORDER, UNIVERSES } from '../lib/universes'
 import { useLanguage } from '../i18n/language'
 
 
@@ -84,7 +84,8 @@ export default function AppSwitcher() {
     return () => document.removeEventListener('keydown', onKey)
   }, [open, pending])
 
-  if (!canSwitch) return null
+  // Un seul établissement : le sélecteur d'univers n'a plus lieu d'être
+  if (!MULTI_UNIVERSE_ENABLED || !canSwitch) return null
 
   const select = async (target) => {
     if (target.id === current) {

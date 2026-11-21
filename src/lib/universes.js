@@ -68,17 +68,18 @@ export const UNIVERSES = {
       { to: '/admin/menus', labelKey: 'nav.menuExpress', shortKey: 'nav.short.menu', icon: 'bolt' },
       { to: '/admin/comptabilite', labelKey: 'nav.badge', shortKey: 'nav.short.badge', icon: 'badge' },
       { to: '/admin/ecole', labelKey: 'nav.rh', shortKey: 'nav.short.rh', icon: 'groups' },
+      { to: '/admin', labelKey: 'nav.dashboard', shortKey: 'nav.short.dashboard', icon: 'space_dashboard', end: true },
     ],
   },
 }
 
-export const UNIVERSE_ORDER = ['vatel', 'gbt', 'acmc']
+// Un seul univers actif : la cantine de Vatel. Les deux autres modèles restent
+// décrits dans le code mais ne sont plus exposés à l'interface.
+export const UNIVERSE_ORDER = ['vatel']
 
-export const universeForModel = (model) => {
-  if (model === 'public_dcs') return 'gbt'
-  if (model === 'entreprise') return 'acmc'
-  return 'vatel'
-}
+export const MULTI_UNIVERSE_ENABLED = false
+
+export const universeForModel = () => 'vatel'
 
 export const universeConfig = (id) => UNIVERSES[id] ?? UNIVERSES.vatel
 

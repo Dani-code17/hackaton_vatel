@@ -159,17 +159,29 @@ export default function ComptabilitePage() {
           <div className="mt-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-600">
             <p className="font-semibold text-slate-700">{t('compta.formulas')}</p>
             <ul className="mt-1 space-y-0.5">
-              <li>{config.finance.revenue} = rationnaires × {school?.meal_price ?? 0} F</li>
+              <li>
+                {t(config.finance.revenue, { price: school?.meal_price ?? 0 })} = rationnaires ×{' '}
+                {school?.meal_price ?? 0} F
+              </li>
               {config.finance.versements ? (
-                <li>Versements = recette × {school?.versements_pct ?? 0} %</li>
+                <li>
+                  {t(config.finance.versements, { pct: school?.versements_pct ?? 0 })} = recette ×{' '}
+                  {school?.versements_pct ?? 0} %
+                </li>
               ) : null}
               {config.finance.salary ? (
-                <li>Salaire cantinière = rationnaires × {school?.cantiniere_per_meal ?? 0} F</li>
+                <li>
+                  {t(config.finance.salary, { amount: school?.cantiniere_per_meal ?? 0 })} =
+                  rationnaires × {school?.cantiniere_per_meal ?? 0} F
+                </li>
               ) : null}
               {config.finance.employer ? (
-                <li>Part employeur = valeur × {school?.employer_subsidy_pct ?? 0} %</li>
+                <li>
+                  {t(config.finance.employer, { pct: school?.employer_subsidy_pct ?? 0 })} = valeur ×{' '}
+                  {school?.employer_subsidy_pct ?? 0} %
+                </li>
               ) : null}
-              <li>{config.finance.fund} = reste après charges</li>
+              <li>{t(config.finance.fund)} = reste après charges</li>
             </ul>
           </div>
         </Card>
