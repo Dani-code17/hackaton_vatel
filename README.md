@@ -126,15 +126,24 @@ Chaque univers possède sa palette, son vocabulaire et sa barre de navigation.
 
 ### Indicateur d'impact PAM
 
-| Donnée | Valeur |
-| --- | --- |
-| Couverture année scolaire | **73 / 120 jours** (moyenne nationale PAM) |
-| Projection avec optimisation des stocks | **98 / 120 jours** (+25 jours gagnés) |
-| Élèves couverts | **194 797** |
-| Achats locaux | **489,6 t** |
+Les repères nationaux affichés dans la supervision proviennent du **rapport annuel 2025 du PAM
+Côte d'Ivoire** (publié en 2026) et sont cités dans l'interface.
 
-La projection est calculée à partir des **achats locaux réellement saisis** (kg) rapportés au
-besoin journalier de l'établissement, plafonnée à 25 jours comme dans le référentiel PAM.
+| Donnée | Valeur | Lecture |
+| --- | --- | --- |
+| Élèves bénéficiaires | **194 797** | Programme national 2025 |
+| Écoles concernées | **833** | dont **220** approvisionnées localement |
+| Repas servis | **11 millions** | Sur l'année scolaire |
+| Denrées achetées localement | **489,6 t** | Via **59** groupements de producteurs |
+| Couverture | **73 / 120 jours** | Moyenne nationale constatée |
+| Cuisiniers et responsables formés | **240** | Hygiène et préparation |
+
+La **projection** (98/120 jours, +25) est calculée à partir des **achats locaux réellement saisis**
+dans l'application (kg) rapportés au besoin journalier de l'établissement, plafonnée à 25 jours
+comme la marge d'optimisation retenue dans le module.
+
+> **Source** : rapport annuel PAM Côte d'Ivoire 2025. Les valeurs nationales sont des données
+> publiées ; seules les projections par établissement sont calculées par l'application.
 
 ### Bilingue FR / EN
 

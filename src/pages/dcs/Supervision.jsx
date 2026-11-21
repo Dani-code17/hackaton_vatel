@@ -6,6 +6,12 @@ import { useLanguage } from '../../i18n/language'
 import CoverageGauge from '../../components/CoverageGauge'
 import { Alert, Badge, Card, Empty, SectionTitle, Spinner, Stat } from '../../components/ui'
 
+/** 11 000 000 → « 11 M » en français, « 11 M » en anglais (million/millions). */
+function formatMillions(value, locale) {
+  const millions = Number(value) / 1_000_000
+  return `${millions.toLocaleString(locale, { maximumFractionDigits: 1 })} M`
+}
+
 export default function SupervisionPage() {
   const { t, locale } = useLanguage()
   const [schools, setSchools] = useState([])
@@ -64,6 +70,15 @@ export default function SupervisionPage() {
     <div className="space-y-5">
       {message ? <Alert tone={message.tone}>{message.text}</Alert> : null}
 
+      <div className="rounded-2xl bg-white px-3 py-2.5 shadow-[0_2px_12px_rgba(7,42,93,0.06)]">
+        <p className="font-display text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
+          {t('pam.reference')}
+        </p>
+        <p className="mt-0.5 text-[11px] leading-relaxed text-slate-600">
+          {t('pam.sourceShort')}
+        </p>
+      </div>
+
       <div className="grid grid-cols-3 gap-3">
         <Stat label={t('sup.schools')} value={schools.length} />
         <Stat label={t('dashboard.mealsServed')} value={totalServed} tone="teal" />
@@ -99,7 +114,36 @@ export default function SupervisionPage() {
             hint={t('pam.localPurchasesHint')}
             tone="teal"
           />
+          <Stat
+            label={t('pam.schools')}
+            value={Number(indicators.ecoles_couvertes?.value ?? 833).toLocaleString(locale)}
+            hint={t('pam.schoolsHint')}
+          />
+          <Stat
+            label={t('pam.mealsNational')}
+            value={formatMillions(indicators.repas_servis_pam?.value ?? 11000000, locale)}
+            hint={t('pam.mealsNationalHint')}
+          />
         </div>
+
+        <div className="mt-3 rounded-xl bg-brand-50 px-3 py-2 ring-1 ring-brand-200">
+          <p className="font-display text-[9px] font-bold uppercase tracking-[0.08em] text-brand-900">
+            {t('pam.localValueChain')}
+          </p>
+          <ul className="mt-1 space-y-0.5 text-[11px] text-brand-900/80">
+            <li>
+              {t('pam.localSchoolsLine', {
+                schools: indicators.ecoles_achats_locaux?.value ?? 220,
+                groups: indicators.groupements_producteurs?.value ?? 59,
+              })}
+            </li>
+            <li>{t('pam.cooksLine', { count: indicators.cuisiniers_formes?.value ?? 240 })}</li>
+          </ul>
+        </div>
+
+        <p className="mt-3 border-t border-slate-100 pt-2 text-[10px] leading-relaxed text-slate-400">
+          {t('pam.source')}
+        </p>
       </Card>
 
       {alerts > 0 ? (

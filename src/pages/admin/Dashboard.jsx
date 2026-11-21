@@ -288,6 +288,7 @@ export default function DashboardPage() {
                 <p className="text-sm font-bold text-slate-800">{school?.enrolled_count ?? 0}</p>
               </div>
             </div>
+            <p className="mt-2 text-[10px] leading-relaxed text-slate-400">{t('pam.sourceShort')}</p>
           </Card>
         ) : (
           <Card>
