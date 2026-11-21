@@ -54,8 +54,10 @@ constats. Insister sur le gaspillage et l'allergie : ce sont les deux sujets qui
 4. Comptoir : scan → **« ALLERGIE : POISSON »** s'affiche en rouge, le service est bloqué
    tant que la cuisine n'a pas confirmé.
 
-> Captures à insérer : `01-menu.png` (carte + conseil IA), `02-pass-qr.png` (pass marine + QR),
-> `03-comptoir-allergie.png` (alerte bloquante), `04-solde.png` (portefeuille style Wave).
+> Captures disponibles dans [`docs/screenshots/`](screenshots) :
+> `01-menu-eleve.png` (carte + conseil IA), `02-pass-qr.png` (pass + QR),
+> `03-solde-wave.png` (portefeuille), `04-offre-anti-gaspi.png` (offre −40 % + file
+> d'attente avec alertes allergie), `05-supervision-pam.png` (impact PAM sourcé).
 
 *Note orateur : c'est la slide la plus importante. 2 minutes. Manipuler l'app en direct si la
 connexion le permet, sinon ces captures.*

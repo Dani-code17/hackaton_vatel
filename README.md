@@ -211,6 +211,21 @@ modèle `deepseek-chat`) via `src/services/deepseekAI.js` :
 
 ---
 
+## 🖼️ Aperçu
+
+| Élève — carte du jour et conseil IA | Pass QR au comptoir | Portefeuille |
+| --- | --- | --- |
+| ![Menu élève](docs/screenshots/01-menu-eleve.png) | ![Pass QR](docs/screenshots/02-pass-qr.png) | ![Solde](docs/screenshots/03-solde-wave.png) |
+
+| Offre anti-gaspillage pilotée par l'IA | Supervision PAM (données sourcées) |
+| --- | --- |
+| ![Offre](docs/screenshots/04-offre-anti-gaspi.png) | ![Supervision](docs/screenshots/05-supervision-pam.png) |
+
+Le deck de présentation (10 slides, notes d'orateur et questions/réponses) est dans
+[`docs/pitch.md`](docs/pitch.md).
+
+---
+
 ## 🏗️ Architecture
 
 ### Vue d'ensemble
