@@ -180,7 +180,7 @@ export default function FlashOfferCard({ onPublished }) {
                 type="button"
                 onClick={() => setMinutes(value)}
                 className={
-                  'h-9 flex-1 rounded-xl font-display text-[11px] font-semibold transition ' +
+                  'h-9 flex-1 rounded-2xl font-display text-[11px] font-semibold transition ' +
                   (minutes === value ? 'bg-brand-900 text-white' : 'bg-slate-100 text-slate-600')
                 }
               >

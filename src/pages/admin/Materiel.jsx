@@ -172,7 +172,7 @@ export default function MaterielPage() {
                           value={item.condition}
                           onChange={(event) => updateItem(item, { condition: event.target.value })}
                           disabled={busy}
-                          className="rounded-lg border border-slate-300 px-2 py-1 text-xs"
+                          className="rounded-2xl border border-slate-300 px-2 py-1 text-xs"
                         >
                           <option value="bon">Bon</option>
                           <option value="a_remplacer">À remplacer</option>
@@ -181,7 +181,7 @@ export default function MaterielPage() {
                         <button
                           type="button"
                           onClick={() => removeItem(item)}
-                          className="rounded-lg px-2 py-1 text-xs font-semibold text-coral-700 hover:bg-coral-100"
+                          className="rounded-2xl px-2 py-1 text-xs font-semibold text-coral-700 hover:bg-coral-100"
                         >
                           Retirer
                         </button>

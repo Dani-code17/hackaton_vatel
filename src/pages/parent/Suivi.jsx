@@ -182,7 +182,7 @@ export default function SuiviPage() {
       <section>
         <SectionTitle>{t('parent.recentMeals')}</SectionTitle>
         {reservations.length === 0 ? (
-          <p className="rounded-xl bg-white p-4 text-center text-xs text-slate-500">
+          <p className="rounded-2xl bg-white p-4 text-center text-xs text-slate-500">
             Aucune réservation enregistrée.
           </p>
         ) : (

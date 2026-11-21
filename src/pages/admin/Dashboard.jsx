@@ -277,13 +277,13 @@ export default function DashboardPage() {
               }
             />
             <div className="mt-3 grid grid-cols-2 gap-2">
-              <div className="rounded-lg bg-slate-50 p-2">
+              <div className="rounded-2xl bg-slate-50 p-2">
                 <p className="text-[10px] uppercase text-slate-500">{t('pam.localPurchases')}</p>
                 <p className="text-sm font-bold text-slate-800">
                   {(state.localKg / 1000).toFixed(1)} t
                 </p>
               </div>
-              <div className="rounded-lg bg-slate-50 p-2">
+              <div className="rounded-2xl bg-slate-50 p-2">
                 <p className="text-[10px] uppercase text-slate-500">{t('dashboard.rationnaires')}</p>
                 <p className="text-sm font-bold text-slate-800">{school?.enrolled_count ?? 0}</p>
               </div>
@@ -300,7 +300,7 @@ export default function DashboardPage() {
                   {new Date(state.hygiene.checked_at).toLocaleString(locale)}
                 </p>
                 {state.hygiene.note ? (
-                  <p className="rounded-lg bg-slate-50 p-2 text-xs text-slate-600">
+                  <p className="rounded-2xl bg-slate-50 p-2 text-xs text-slate-600">
                     {state.hygiene.note}
                   </p>
                 ) : null}

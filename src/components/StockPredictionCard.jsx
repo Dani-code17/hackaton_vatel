@@ -67,7 +67,7 @@ export default function StockPredictionCard({ history = [], supplies = [], fallb
           </div>
 
           {forecast?.risks?.length > 0 ? (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-2.5">
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-2.5">
               <p className="font-display text-[10px] font-bold uppercase tracking-[0.08em] text-amber-700">
                 {t('ai.riskTitle')}
               </p>
@@ -85,7 +85,7 @@ export default function StockPredictionCard({ history = [], supplies = [], fallb
               </ul>
             </div>
           ) : (
-            <p className="rounded-xl bg-emerald-50 px-2.5 py-2 text-[11px] font-medium text-emerald-700">
+            <p className="rounded-2xl bg-emerald-50 px-2.5 py-2 text-[11px] font-medium text-emerald-700">
               {t('ai.noRisk')}
             </p>
           )}

@@ -97,7 +97,7 @@ export function Field({ label, hint, children }) {
 }
 
 const CONTROL =
-  'h-12 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 ' +
+  'h-12 w-full rounded-2xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 ' +
   'placeholder:text-slate-400 focus:border-brand-900 focus:outline-none focus:ring-2 focus:ring-brand-200/60'
 
 export function Input({ className = '', ...props }) {
@@ -123,7 +123,7 @@ export function Textarea({ className = '', ...props }) {
 
 export function Empty({ title, description }) {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 p-8 text-center">
+    <div className="rounded-3xl border border-dashed border-slate-300 bg-white/70 p-8 text-center">
       <p className="font-display text-sm font-semibold text-slate-700">{title}</p>
       {description ? <p className="mt-1 text-xs text-slate-500">{description}</p> : null}
     </div>
@@ -147,7 +147,7 @@ export function Stat({ label, value, hint, tone = 'slate', icon }) {
     rose: 'text-coral-500',
   }
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_2px_8px_rgba(7,42,93,0.04)]">
+    <div className="rounded-3xl bg-white p-3.5 shadow-[0_2px_12px_rgba(7,42,93,0.06)]">
       <div className="flex items-center gap-1.5">
         {icon ? <Icon name={icon} className="text-[15px] text-slate-400" /> : null}
         <p className="font-display text-[9px] font-bold uppercase tracking-[0.08em] text-slate-500">
@@ -167,7 +167,7 @@ export function Alert({ tone = 'teal', title, children }) {
     rose: 'border-coral-200 bg-coral-100 text-coral-700',
   }
   return (
-    <div className={cx('rounded-xl border px-3 py-2.5 text-xs', tones[tone])}>
+    <div className={cx('rounded-2xl border px-3.5 py-3 text-xs', tones[tone])}>
       {title ? <p className="font-display font-bold uppercase tracking-wide">{title}</p> : null}
       {children ? <div className={title ? 'mt-1' : ''}>{children}</div> : null}
     </div>

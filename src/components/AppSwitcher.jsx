@@ -25,7 +25,7 @@ function UniverseCard({ universe, active, disabled, onSelect, t }) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <span
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-xl"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-xl"
             style={{ backgroundColor: universe.swatches[2] || '#F4F7FA' }}
           >
             {universe.icon}
@@ -154,7 +154,7 @@ export default function AppSwitcher() {
                 </div>
 
                 {error ? (
-                  <p className="mt-3 rounded-xl border border-coral-300 bg-coral-100 px-3 py-2 text-xs text-coral-700">
+                  <p className="mt-3 rounded-2xl border border-coral-300 bg-coral-100 px-3 py-2 text-xs text-coral-700">
                     {error}
                   </p>
                 ) : null}

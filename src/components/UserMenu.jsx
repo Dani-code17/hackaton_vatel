@@ -21,7 +21,7 @@ export default function UserMenu({ light = false }) {
         type="button"
         onClick={signOut}
         className={
-          'rounded-lg px-2 py-1 text-xs font-semibold transition ' +
+          'rounded-2xl px-2 py-1 text-xs font-semibold transition ' +
           (light
             ? 'text-brand-200 hover:bg-white/10 hover:text-white'
             : 'text-slate-500 hover:bg-slate-100')

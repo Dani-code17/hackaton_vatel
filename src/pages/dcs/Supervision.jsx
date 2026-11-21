@@ -126,7 +126,7 @@ export default function SupervisionPage() {
           />
         </div>
 
-        <div className="mt-3 rounded-xl bg-brand-50 px-3 py-2 ring-1 ring-brand-200">
+        <div className="mt-3 rounded-2xl bg-brand-50 px-3 py-2 ring-1 ring-brand-200">
           <p className="font-display text-[9px] font-bold uppercase tracking-[0.08em] text-brand-900">
             {t('pam.localValueChain')}
           </p>
@@ -189,19 +189,19 @@ export default function SupervisionPage() {
               </div>
 
               <dl className="grid grid-cols-2 gap-2 text-xs">
-                <div className="rounded-lg bg-slate-50 p-2">
+                <div className="rounded-2xl bg-slate-50 p-2">
                   <dt className="text-slate-500">{t('dashboard.mealsServed')}</dt>
                   <dd className="text-sm font-bold text-slate-800">
                     {dayAccounting?.served_count ?? 0}
                   </dd>
                 </div>
-                <div className="rounded-lg bg-slate-50 p-2">
+                <div className="rounded-2xl bg-slate-50 p-2">
                   <dt className="text-slate-500">{t('sup.transfers')}</dt>
                   <dd className="text-sm font-bold text-slate-800">
                     {fcfa(dayAccounting?.versements)}
                   </dd>
                 </div>
-                <div className="rounded-lg bg-slate-50 p-2">
+                <div className="rounded-2xl bg-slate-50 p-2">
                   <dt className="text-slate-500">{t('modules.hygiene')}</dt>
                   <dd
                     className={
@@ -218,7 +218,7 @@ export default function SupervisionPage() {
                     {lastHygiene ? `${lastHygiene.score}/100` : '—'}
                   </dd>
                 </div>
-                <div className="rounded-lg bg-slate-50 p-2">
+                <div className="rounded-2xl bg-slate-50 p-2">
                   <dt className="text-slate-500">{t('sup.ledger')}</dt>
                   <dd className="text-sm font-bold text-slate-800">
                     {dayAccounting?.signed_at ? t('common.signed') : t('common.notSigned')}
@@ -227,7 +227,7 @@ export default function SupervisionPage() {
               </dl>
 
               {lowStock.length > 0 ? (
-                <div className="rounded-lg bg-coral-100 p-2 text-xs text-coral-700">
+                <div className="rounded-2xl bg-coral-100 p-2 text-xs text-coral-700">
                   {t('dashboard.lowStock', { list: lowStock.map((item) => item.name).join(', ') })}
                 </div>
               ) : (

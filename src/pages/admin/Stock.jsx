@@ -260,7 +260,7 @@ export default function StockPage() {
             />
           </Field>
 
-          <div className="mt-3 overflow-hidden rounded-xl border border-slate-200">
+          <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500">
                 <tr>
@@ -331,7 +331,7 @@ export default function StockPage() {
               <li
                 key={item.id}
                 className={
-                  'flex items-center justify-between rounded-xl border px-3 py-2 text-sm ' +
+                  'flex items-center justify-between rounded-2xl border px-3 py-2 text-sm ' +
                   (low ? 'border-coral-300 bg-coral-100' : 'border-slate-200 bg-white')
                 }
               >

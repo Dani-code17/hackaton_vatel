@@ -121,7 +121,7 @@ export default function ComptabilitePage() {
     <div className="space-y-5">
       {message ? <Alert tone={message.tone}>{message.text}</Alert> : null}
 
-      <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+      <div className="rounded-3xl bg-white shadow-[0_2px_12px_rgba(7,42,93,0.06)] px-4 py-3">
         <p className="text-sm font-semibold text-slate-800">{school?.name}</p>
         <p className="text-xs text-slate-500">
           {t(config.label)} · {t(config.priceNote)}
@@ -156,7 +156,7 @@ export default function ComptabilitePage() {
             </Button>
           </form>
 
-          <div className="mt-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-600">
+          <div className="mt-4 rounded-2xl bg-slate-50 p-3 text-xs text-slate-600">
             <p className="font-semibold text-slate-700">{t('compta.formulas')}</p>
             <ul className="mt-1 space-y-0.5">
               <li>

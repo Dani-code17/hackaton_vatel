@@ -116,7 +116,7 @@ export default function HygienePage() {
             <ul className="space-y-1.5">
               {checks.map((item, index) => (
                 <li key={item.label}>
-                  <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50">
+                  <label className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50">
                     <span className="text-slate-700">{item.label}</span>
                     <input
                       type="checkbox"
@@ -130,7 +130,7 @@ export default function HygienePage() {
               ))}
             </ul>
 
-            <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
+            <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2">
               <span className="text-xs font-semibold uppercase text-slate-500">{t('hygiene.score')}</span>
               <span
                 className={
@@ -149,7 +149,7 @@ export default function HygienePage() {
                 capture="environment"
                 onChange={(event) => setFile(event.target.files?.[0] ?? null)}
                 disabled={!canWrite}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                className="w-full rounded-2xl border border-slate-300 px-3 py-2 text-xs"
               />
             </Field>
 

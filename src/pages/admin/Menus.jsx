@@ -207,11 +207,11 @@ export default function MenusPage() {
                   {t('menus.photo')}
                 </p>
                 <div className="flex items-center gap-3">
-                  <div className="h-16 w-24 shrink-0 overflow-hidden rounded-xl bg-slate-100">
+                  <div className="h-16 w-24 shrink-0 overflow-hidden rounded-2xl bg-slate-100">
                     <MealVisual meal={{ ...form, name: form.name || form.base_label }} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <label className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-xl bg-brand-100 px-3 font-display text-[11px] font-bold text-brand-900">
+                    <label className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-2xl bg-brand-100 px-3 font-display text-[11px] font-bold text-brand-900">
                       <Icon name="photo_camera" className="text-[16px]" />
                       {uploading ? t('common.loading') : t('menus.upload')}
                       <input
@@ -338,14 +338,14 @@ export default function MenusPage() {
                       <button
                         type="button"
                         onClick={() => startEdit(meal)}
-                        className="rounded-lg bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-900 hover:bg-brand-100"
+                        className="rounded-2xl bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-900 hover:bg-brand-100"
                       >
                         {t('menus.editAction')}
                       </button>
                       <button
                         type="button"
                         onClick={() => remove(meal)}
-                        className="rounded-lg px-2 py-1 text-xs font-semibold text-coral-700 hover:bg-coral-100"
+                        className="rounded-2xl px-2 py-1 text-xs font-semibold text-coral-700 hover:bg-coral-100"
                       >
                         {t('menus.deleteAction')}
                       </button>

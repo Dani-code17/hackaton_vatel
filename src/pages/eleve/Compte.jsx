@@ -245,7 +245,11 @@ export default function ComptePage() {
 
             <p className="text-[11px] leading-relaxed text-slate-500">
               {needsPhone
-                ? t('recharge.requestHint', { method: selectedMethod?.label, phone })
+                ? t('recharge.requestHint', {
+                    amount: fcfa(amount),
+                    method: selectedMethod?.label,
+                    phone,
+                  })
                 : t('recharge.cashHint')}
             </p>
 

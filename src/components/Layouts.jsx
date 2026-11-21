@@ -21,7 +21,7 @@ export function BrandBar({ title, subtitle, badge, right }) {
     <header className="sticky top-0 z-30 bg-brand-900 text-white shadow-[0_2px_10px_rgba(7,42,93,0.18)]">
       <div className="flex items-center justify-between gap-2 px-4 py-2.5">
         <div className="flex min-w-0 items-center gap-2">
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-coral-500 font-display text-[13px] font-extrabold text-on-accent">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-2xl bg-coral-500 font-display text-[13px] font-extrabold text-on-accent">
             V
           </span>
           <div className="min-w-0 leading-none">
