@@ -132,7 +132,7 @@ export default function EcolePage() {
       </div>
 
       <div className="grid gap-4">
-        <Card>
+        <Card className="p-4">
           <SectionTitle>{t('school.sheet')}</SectionTitle>
           <dl className="space-y-2 text-sm">
             <div className="flex justify-between">
@@ -172,7 +172,7 @@ export default function EcolePage() {
           </Button>
         </Card>
 
-        <Card>
+        <Card className="p-4">
           <SectionTitle>{t('school.attendance')}</SectionTitle>
           <form onSubmit={saveAttendance} className="space-y-3">
             <div className="grid grid-cols-2 gap-3">

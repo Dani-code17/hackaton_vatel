@@ -148,7 +148,7 @@ export default function MenusPage() {
 
       <div className="grid gap-4">
         {canWrite ? (
-          <Card>
+          <Card className="p-4">
             <SectionTitle>{t(editingId ? 'menus.edit' : 'menus.add')}</SectionTitle>
             <form onSubmit={submit} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">

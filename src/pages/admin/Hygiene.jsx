@@ -110,7 +110,7 @@ export default function HygienePage() {
       {message ? <Alert tone={message.tone}>{message.text}</Alert> : null}
 
       <div className="grid gap-4">
-        <Card>
+        <Card className="p-4">
           <SectionTitle>{t('hygiene.checklistToday')}</SectionTitle>
           <form onSubmit={submit} className="space-y-3">
             <ul className="space-y-1.5">
@@ -173,7 +173,7 @@ export default function HygienePage() {
           </form>
         </Card>
 
-        <Card>
+        <Card className="p-4">
           <SectionTitle>{t('hygiene.history')}</SectionTitle>
           {history.length === 0 ? (
             <Empty title={t('hygiene.empty')} description={t('hygiene.emptyHint')} />

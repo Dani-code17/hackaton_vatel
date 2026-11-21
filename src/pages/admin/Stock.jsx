@@ -172,7 +172,7 @@ export default function StockPage() {
       </div>
 
       <div className="grid gap-4">
-        <Card>
+        <Card className="p-4">
           <SectionTitle>{t('stock.reception')}</SectionTitle>
           <form onSubmit={submitReception} className="space-y-3">
             <Field label={t('stock.article')}>
@@ -249,7 +249,7 @@ export default function StockPage() {
           </form>
         </Card>
 
-        <Card>
+        <Card className="p-4">
           <SectionTitle>{t('stock.rationsCalc')}</SectionTitle>
           <Field label={t('stock.rationnairesToday')} hint={t('stock.rationnairesHint')}>
             <Input
@@ -299,7 +299,7 @@ export default function StockPage() {
         </Card>
       </div>
 
-      <Card>
+      <Card className="p-4">
         <SectionTitle
           action={
             <Button
@@ -348,7 +348,7 @@ export default function StockPage() {
         </ul>
       </Card>
 
-      <Card>
+      <Card className="p-4">
         <SectionTitle>Derniers mouvements</SectionTitle>
         {movements.length === 0 ? (
           <Empty title="Aucun mouvement" description="Les sorties de stock apparaîtront ici." />

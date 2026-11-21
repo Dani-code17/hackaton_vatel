@@ -99,7 +99,7 @@ export default function CommandesPage() {
         <Stat label={t('accounting.revenueShort')} value={`${summary.revenue} F`} />
       </div>
 
-      <Card>
+      <Card className="p-4">
         <SectionTitle>{t('orders.qrScan')}</SectionTitle>
 
         {justServed ? (
@@ -178,7 +178,7 @@ export default function CommandesPage() {
 
       <FlashOfferCard onPublished={load} />
 
-      <Card>
+      <Card className="p-4">
         <SectionTitle>{t('orders.queue')}</SectionTitle>
         {rows.length === 0 ? (
           <Empty

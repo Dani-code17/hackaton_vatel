@@ -85,7 +85,7 @@ export default function SupervisionPage() {
         <Stat label={t('sup.transfersToday')} value={fcfa(totalVersements)} />
       </div>
 
-      <Card>
+      <Card className="p-4">
         <SectionTitle>{t('pam.national')}</SectionTitle>
         <CoverageGauge
           current={indicators.couverture_jours?.value ?? 73}

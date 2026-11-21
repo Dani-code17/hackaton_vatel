@@ -176,11 +176,11 @@ export function Alert({ tone = 'teal', title, children }) {
 
 export function SectionTitle({ children, action }) {
   return (
-    <div className="mb-3 flex items-end justify-between gap-2">
-      <h2 className="font-display text-[13px] font-bold uppercase tracking-[0.06em] text-brand-900">
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+      <h2 className="min-w-0 flex-1 font-display text-[13px] font-bold uppercase leading-snug tracking-[0.06em] text-brand-900">
         {children}
       </h2>
-      {action}
+      {action ? <div className="shrink-0">{action}</div> : null}
     </div>
   )
 }

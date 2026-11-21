@@ -7,7 +7,7 @@ import { Badge, Button, Card, Icon, Skeleton } from './ui'
  * « Prédiction IA Anti-Gaspillage » — rations à préparer demain et risques de rupture.
  * L'appel DeepSeek est silencieusement remplacé par le moteur local hors ligne.
  */
-export default function StockPredictionCard({ history = [], supplies = [], fallbackHeadcount = 0 }) {
+export default function StockPredictionCard({ history = [], supplies = [], fallbackHeadcount = 0, reservedToday = null }) {
   const { t, lang } = useLanguage()
   const [forecast, setForecast] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -17,12 +17,12 @@ export default function StockPredictionCard({ history = [], supplies = [], fallb
     requestId.current += 1
     const current = requestId.current
     setLoading(true)
-    const result = await predictRations({ history, supplies, lang, fallbackHeadcount })
+    const result = await predictRations({ history, supplies, lang, fallbackHeadcount, reservedToday })
     // Ignore une réponse obsolète (double rendu, rafraîchissement concurrent)
     if (current !== requestId.current) return
     setForecast(result)
     setLoading(false)
-  }, [history, supplies, lang, fallbackHeadcount])
+  }, [history, supplies, lang, fallbackHeadcount, reservedToday])
 
   useEffect(() => {
     ask()
@@ -58,7 +58,9 @@ export default function StockPredictionCard({ history = [], supplies = [], fallb
               </p>
               <p className="text-[10px] text-slate-400">
                 {t('ai.confidence', { pct: forecast?.confidence ?? 0 })} ·{' '}
-                {t('ai.history', { days: forecast?.days ?? 0 })}
+                {forecast?.booked != null
+                  ? t('ai.basedOnBookings', { count: forecast.booked })
+                  : t('ai.history', { days: forecast?.days ?? 0 })}
               </p>
             </div>
             <Button variant="ghost" className="h-8 px-2 text-[11px]" onClick={ask}>

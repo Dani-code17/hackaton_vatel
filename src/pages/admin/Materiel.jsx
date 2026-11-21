@@ -103,7 +103,7 @@ export default function MaterielPage() {
 
       <div className="grid gap-4">
         {canWrite ? (
-          <Card>
+          <Card className="p-4">
             <SectionTitle>{t('equipment.add')}</SectionTitle>
             <form onSubmit={addItem} className="space-y-3">
               <Field label={t('equipment.designation')}>
@@ -148,7 +148,7 @@ export default function MaterielPage() {
           </Card>
         ) : null}
 
-        <Card>
+        <Card className="p-4">
           <SectionTitle>{t('equipment.inventory')}</SectionTitle>
           {items.length === 0 ? (
             <Empty title={t('equipment.empty')} description="Ajoutez le matériel de cuisine." />

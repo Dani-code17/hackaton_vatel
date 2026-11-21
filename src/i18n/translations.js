@@ -293,6 +293,8 @@ export const TRANSLATIONS = {
     'ai.riskLine': '{name} : besoin {needed} {unit}, stock {stock} {unit}',
     'ai.noRisk': 'Aucun risque de rupture détecté pour demain.',
     'ai.history': 'Basé sur {days} jours de service',
+    'ai.basedOnBookings': 'Basé sur {count} réservations du jour',
+    'ai.bookedToday': 'Réservés aujourd’hui : {count}',
     'ai.fallback': 'Moteur local (IA indisponible)',
 
     'sup.schools': 'Écoles',
@@ -741,6 +743,8 @@ export const TRANSLATIONS = {
     'ai.riskLine': '{name}: need {needed} {unit}, stock {stock} {unit}',
     'ai.noRisk': 'No shortage risk detected for tomorrow.',
     'ai.history': 'Based on {days} service days',
+    'ai.basedOnBookings': 'Based on {count} bookings today',
+    'ai.bookedToday': 'Booked today: {count}',
     'ai.fallback': 'Local engine (AI unavailable)',
 
     'sup.schools': 'Schools',

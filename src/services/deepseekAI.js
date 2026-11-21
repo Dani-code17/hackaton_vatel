@@ -251,6 +251,28 @@ export async function suggestFlashOffer({ meals = [], reservedByMeal = {}, lang 
   }
 }
 
+/**
+ * Prévision du nombre de portions à préparer pour un service.
+ * Base : les réservations du jour, majorées du taux d'absence constaté sur les
+ * derniers services (les élèves qui réservent ne viennent pas tous).
+ */
+export function forecastFromReservations({ reserved = 0, history = [], marginPct = 10 } = {}) {
+  const booked = Math.max(0, Math.round(Number(reserved) || 0))
+  const served = history.map((entry) => Number(entry?.served ?? entry) || 0).filter(Boolean)
+
+  // Taux d'absence observé : moyenne des services, plafonné à 15 %
+  let absence = 0
+  if (served.length > 0) {
+    const average = served.reduce((sum, value) => sum + value, 0) / served.length
+    const last = served[0]
+    if (average > 0 && last > 0) absence = Math.min(0.15, Math.abs(average - last) / average)
+  }
+
+  const headcount = booked > 0 ? Math.round(booked * (1 + absence) + booked * (marginPct / 100)) : 0
+
+  return { booked, headcount, absencePct: Math.round(absence * 100), days: served.length }
+}
+
 /** Prévision locale : moyenne pondérée de l'historique + détection des ruptures. */export function localRationForecast({ history = [], supplies = [], fallbackHeadcount = 0 }) {
   const headcount = forecastHeadcount(history) || Math.round(Number(fallbackHeadcount) || 0)
   const risks = lowStockRisks({ headcount, supplies })
@@ -271,17 +293,40 @@ export async function suggestFlashOffer({ meals = [], reservedByMeal = {}, lang 
  * Estime les rations à préparer pour demain et les risques de rupture.
  * Bascule silencieusement sur le moteur local si l'API est absente ou en échec.
  */
-export async function predictRations({ history = [], supplies = [], lang = 'fr', fallbackHeadcount = 0 }) {
-  const fallback = localRationForecast({ history, supplies, fallbackHeadcount })
+export async function predictRations({
+  history = [],
+  supplies = [],
+  lang = 'fr',
+  fallbackHeadcount = 0,
+  reservedToday = null,
+}) {
+  // Priorité aux réservations du jour : c'est ce que la cuisine doit produire
+  const fromBookings =
+    reservedToday !== null
+      ? forecastFromReservations({ reserved: reservedToday, history })
+      : null
+
+  const fallback = fromBookings
+    ? {
+        source: 'local',
+        headcount: fromBookings.headcount,
+        confidence: 92,
+        risks: lowStockRisks({ headcount: fromBookings.headcount, supplies }),
+        days: fromBookings.days,
+        booked: fromBookings.booked,
+        absencePct: fromBookings.absencePct,
+      }
+    : localRationForecast({ history, supplies, fallbackHeadcount })
   if (!isDeepSeekEnabled() || fallback.headcount === 0) return fallback
 
   const system =
-    'Tu es analyste anti-gaspillage pour une cantine scolaire (PAM / DCS). À partir de ' +
-    "l'historique des repas servis et des stocks, estime le nombre de rations à préparer " +
-    'demain. Réponds uniquement en JSON: {"headcount":<entier>,"confidence":<50-99>,' +
+    'Tu es analyste anti-gaspillage pour une cantine. À partir des RÉSERVATIONS du jour, ' +
+    "de l'historique des services et des stocks, estime le nombre de portions à préparer. " +
+    'Réponds uniquement en JSON: {"headcount":<entier>,"confidence":<50-99>,' +
     '"note":"<max 110 caractères>"}.'
   const user = JSON.stringify({
     langue: lang,
+    reservations_du_jour: reservedToday,
     effectif: fallbackHeadcount,
     historique: history.slice(0, 14).map((entry) => ({
       date: entry.service_date,

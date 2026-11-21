@@ -234,7 +234,7 @@ export default function DashboardPage() {
       />
 
       <div className="grid gap-4">
-        <Card>
+        <Card className="p-4">
           <SectionTitle>{t('dashboard.dailyJournal', { model: t(config.short) })}</SectionTitle>
           <dl className="space-y-2 text-sm">
             {financeRows.map((row) => (
@@ -263,7 +263,7 @@ export default function DashboardPage() {
         </Card>
 
         {config.showPamImpact ? (
-          <Card>
+          <Card className="p-4">
             <SectionTitle>{t('pam.title')}</SectionTitle>
             <CoverageGauge
               current={covered}
@@ -291,7 +291,7 @@ export default function DashboardPage() {
             <p className="mt-2 text-[10px] leading-relaxed text-slate-400">{t('pam.sourceShort')}</p>
           </Card>
         ) : (
-          <Card>
+          <Card className="p-4">
             <SectionTitle>{t('dashboard.lastHygiene')}</SectionTitle>
             {state.hygiene ? (
               <div className="space-y-2">
@@ -313,7 +313,7 @@ export default function DashboardPage() {
       </div>
 
       {config.showPamImpact && state.hygiene ? (
-        <Card>
+        <Card className="p-4">
           <SectionTitle>{t('dashboard.lastHygiene')}</SectionTitle>
           <div className="flex items-center justify-between">
             <p className="text-2xl font-bold text-slate-900">{state.hygiene.score}/100</p>
@@ -327,7 +327,7 @@ export default function DashboardPage() {
         </Card>
       ) : null}
 
-      <Card>
+      <Card className="p-4">
         <SectionTitle>{t('dashboard.servedToday')}</SectionTitle>
         {state.reservations.length === 0 ? (
           <p className="text-sm text-slate-500">{t('dashboard.noReservation')}</p>

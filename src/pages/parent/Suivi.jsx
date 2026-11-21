@@ -141,7 +141,7 @@ export default function SuiviPage() {
         )
       })}
 
-      <Card>
+      <Card className="p-4">
         <SectionTitle>{t('parent.topUp')}</SectionTitle>
         <form onSubmit={recharge} className="space-y-3">
           <Field label={t('parent.child')}>

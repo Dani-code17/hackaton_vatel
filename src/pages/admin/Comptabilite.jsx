@@ -129,7 +129,7 @@ export default function ComptabilitePage() {
       </div>
 
       <div className="grid gap-4">
-        <Card>
+        <Card className="p-4">
           <SectionTitle>{t('compta.dailyEntry')}</SectionTitle>
           <form onSubmit={saveEntry} className="space-y-3">
             <Field label={t('common.date')}>
@@ -186,7 +186,7 @@ export default function ComptabilitePage() {
           </div>
         </Card>
 
-        <Card className="overflow-x-auto">
+        <Card className="p-4 overflow-x-auto">
           <SectionTitle
             action={
               <Button variant="ghost" className="text-xs" onClick={exportJournal}>
