@@ -1,0 +1,298 @@
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useAuth } from '../../context/AuthContext'
+import { supabase } from '../../lib/supabase'
+import { formatDay, todayISO } from '../../lib/format'
+import { Alert, Badge, Button, Card, Empty, Field, Input, SectionTitle, Select, Spinner, Stat } from '../../components/ui'
+
+export default function StockPage() {
+  const { profile } = useAuth()
+  const [supplies, setSupplies] = useState([])
+  const [movements, setMovements] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [message, setMessage] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [rationnaires, setRationnaires] = useState(180)
+  const [reception, setReception] = useState({
+    supply_id: '',
+    quantity: '',
+    source: 'gouvernement',
+    note: '',
+  })
+
+  const canWrite = profile?.role === 'gerant'
+  const today = todayISO()
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const [suppliesResult, movementsResult] = await Promise.all([
+      supabase.from('supplies').select('*').order('name'),
+      supabase
+        .from('supply_movements')
+        .select('id, quantity, kind, rationnaires, service_date, created_at, supply:supplies(name, unit)')
+        .order('created_at', { ascending: false })
+        .limit(12),
+    ])
+
+    if (suppliesResult.error) setMessage({ tone: 'rose', text: suppliesResult.error.message })
+    setSupplies(suppliesResult.data ?? [])
+    setMovements(movementsResult.data ?? [])
+    setReception((current) => ({
+      ...current,
+      supply_id: current.supply_id || (suppliesResult.data?.[0]?.id ?? ''),
+    }))
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  const preview = useMemo(
+    () =>
+      supplies
+        .filter((item) => Number(item.qty_per_person) > 0)
+        .map((item) => ({
+          ...item,
+          needed: Math.round(Number(item.qty_per_person) * Number(rationnaires) * 100) / 100,
+        })),
+    [supplies, rationnaires],
+  )
+
+  const shortfall = preview.filter((item) => item.needed > Number(item.stock))
+
+  const applyRations = async () => {
+    setBusy(true)
+    setMessage(null)
+    try {
+      const { data, error } = await supabase.rpc('apply_rations', {
+        p_school_id: profile.school_id,
+        p_rationnaires: Number(rationnaires),
+        p_service_date: today,
+      })
+      if (error) throw error
+      await load()
+      setMessage({
+        tone: 'teal',
+        text: `Stock décrémenté pour ${data.rationnaires} rationnaires (${data.lines.length} articles).`,
+      })
+    } catch (error) {
+      setMessage({ tone: 'rose', text: error.message })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const submitReception = async (event) => {
+    event.preventDefault()
+    setBusy(true)
+    setMessage(null)
+    try {
+      const supply = supplies.find((item) => item.id === reception.supply_id)
+      if (!supply) throw new Error('Sélectionnez un article')
+
+      const quantity = Number(reception.quantity)
+      if (!quantity || quantity <= 0) throw new Error('Quantité invalide')
+
+      const { error: receptionError } = await supabase.from('supply_receptions').insert({
+        school_id: profile.school_id,
+        supply_id: supply.id,
+        quantity,
+        source: reception.source,
+        note: reception.note.trim() || null,
+      })
+      if (receptionError) throw receptionError
+
+      const { error: stockError } = await supabase
+        .from('supplies')
+        .update({ stock: Number(supply.stock) + quantity, updated_at: new Date().toISOString() })
+        .eq('id', supply.id)
+      if (stockError) throw stockError
+
+      setReception({ ...reception, quantity: '', note: '' })
+      await load()
+      setMessage({ tone: 'teal', text: `Réception enregistrée : +${quantity} ${supply.unit} de ${supply.name}.` })
+    } catch (error) {
+      setMessage({ tone: 'rose', text: error.message })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (loading) return <Spinner />
+
+  return (
+    <div className="space-y-5">
+      {message ? <Alert tone={message.tone}>{message.text}</Alert> : null}
+      {!canWrite ? (
+        <Alert tone="amber">Consultation seule : le gérant saisit les réceptions et les rations.</Alert>
+      ) : null}
+
+      <div className="grid grid-cols-3 gap-3">
+        <Stat label="Articles" value={supplies.length} />
+        <Stat
+          label="Sous le seuil"
+          value={supplies.filter((item) => Number(item.stock) <= Number(item.min_stock)).length}
+          tone="amber"
+        />
+        <Stat label="Rationnaires" value={rationnaires} hint={formatDay(today)} />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <SectionTitle>Réception des vivres</SectionTitle>
+          <form onSubmit={submitReception} className="space-y-3">
+            <Field label="Article">
+              <Select
+                value={reception.supply_id}
+                onChange={(event) => setReception({ ...reception, supply_id: event.target.value })}
+              >
+                {supplies.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name} ({item.stock} {item.unit})
+                  </option>
+                ))}
+              </Select>
+            </Field>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Quantité reçue">
+                <Input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={reception.quantity}
+                  onChange={(event) => setReception({ ...reception, quantity: event.target.value })}
+                  required
+                  disabled={!canWrite}
+                />
+              </Field>
+              <Field label="Origine">
+                <Select
+                  value={reception.source}
+                  onChange={(event) => setReception({ ...reception, source: event.target.value })}
+                  disabled={!canWrite}
+                >
+                  <option value="gouvernement">Gouvernement</option>
+                  <option value="communaute">Communauté</option>
+                  <option value="organisation">Organisation externe</option>
+                </Select>
+              </Field>
+            </div>
+
+            <Field label="Observation">
+              <Input
+                value={reception.note}
+                onChange={(event) => setReception({ ...reception, note: event.target.value })}
+                placeholder="Bon de livraison n°…"
+                disabled={!canWrite}
+              />
+            </Field>
+
+            <Button type="submit" className="w-full" disabled={busy || !canWrite}>
+              {busy ? 'Enregistrement…' : 'Enregistrer la réception'}
+            </Button>
+          </form>
+        </Card>
+
+        <Card>
+          <SectionTitle>Calculateur de rations</SectionTitle>
+          <Field label="Rationnaires du jour" hint="élèves présents ou réservés">
+            <Input
+              type="number"
+              min="1"
+              value={rationnaires}
+              onChange={(event) => setRationnaires(event.target.value)}
+            />
+          </Field>
+
+          <div className="mt-3 overflow-hidden rounded-xl border border-slate-200">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-2 py-1.5">Article</th>
+                  <th className="px-2 py-1.5 text-right">Besoin</th>
+                  <th className="px-2 py-1.5 text-right">Stock</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {preview.map((item) => (
+                  <tr key={item.id} className={item.needed > Number(item.stock) ? 'bg-rose-50' : ''}>
+                    <td className="px-2 py-1.5 font-medium text-slate-700">{item.name}</td>
+                    <td className="px-2 py-1.5 text-right">
+                      {item.needed} {item.unit}
+                    </td>
+                    <td className="px-2 py-1.5 text-right text-slate-500">{item.stock}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {shortfall.length > 0 ? (
+            <p className="mt-2 text-xs font-semibold text-rose-600">
+              Stock insuffisant : {shortfall.map((item) => item.name).join(', ')}
+            </p>
+          ) : null}
+
+          <Button
+            className="mt-3 w-full"
+            disabled={busy || !canWrite || shortfall.length > 0}
+            onClick={applyRations}
+          >
+            {busy ? 'Traitement…' : `Sortir le stock pour ${rationnaires} repas`}
+          </Button>
+        </Card>
+      </div>
+
+      <Card>
+        <SectionTitle>État du stock</SectionTitle>
+        <ul className="grid gap-2 sm:grid-cols-2">
+          {supplies.map((item) => {
+            const low = Number(item.stock) <= Number(item.min_stock)
+            return (
+              <li
+                key={item.id}
+                className={
+                  'flex items-center justify-between rounded-xl border px-3 py-2 text-sm ' +
+                  (low ? 'border-rose-200 bg-rose-50' : 'border-slate-200 bg-white')
+                }
+              >
+                <span className="font-medium text-slate-800">{item.name}</span>
+                <span className="flex items-center gap-2">
+                  <span className="text-xs text-slate-500">
+                    {item.stock} {item.unit}
+                  </span>
+                  {low ? <Badge tone="rose">seuil {item.min_stock}</Badge> : null}
+                </span>
+              </li>
+            )
+          })}
+        </ul>
+      </Card>
+
+      <Card>
+        <SectionTitle>Derniers mouvements</SectionTitle>
+        {movements.length === 0 ? (
+          <Empty title="Aucun mouvement" description="Les sorties de stock apparaîtront ici." />
+        ) : (
+          <ul className="divide-y divide-slate-100 text-sm">
+            {movements.map((movement) => (
+              <li key={movement.id} className="flex items-center justify-between py-2">
+                <div>
+                  <p className="font-medium text-slate-800">{movement.supply?.name}</p>
+                  <p className="text-[11px] text-slate-400">
+                    {formatDay(movement.service_date)} · {movement.kind}
+                    {movement.rationnaires ? ` · ${movement.rationnaires} rationnaires` : ''}
+                  </p>
+                </div>
+                <span className="text-xs font-semibold text-rose-600">
+                  -{movement.quantity} {movement.supply?.unit}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+    </div>
+  )
+}
