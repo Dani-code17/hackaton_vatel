@@ -162,12 +162,14 @@ modèle `deepseek-chat`) via `src/services/deepseekAI.js` :
 | **Vatel Smart Chef IA** | Carte du jour (élève / salarié) | Reçoit le profil d'allergies, le solde, les plats disponibles et la langue active ; renvoie le plat le plus sûr avec un score de compatibilité et une justification courte. Bouton « Actualiser le conseil IA ». |
 | **Prédiction IA Anti-Gaspillage** | Tableau de bord du gérant | Analyse l'historique des repas servis et les stocks pour estimer les rations du lendemain et lister les risques de rupture (riz, sardines, huile). |
 
-- La clé **n'est jamais committée** et **n'est pas incluse dans le bundle** : en production, le
-  navigateur appelle la fonction Edge `deepseek` (`supabase/functions/deepseek`), qui détient le
-  secret côté serveur. En local uniquement, `VITE_DEEPSEEK_API_KEY` permet un appel direct.
+- La clé **n'est jamais committée** et **n'est pas incluse dans le bundle** : le navigateur
+  appelle la fonction Edge `deepseek` (`supabase/functions/deepseek`), déployée sur le projet
+  et dont le secret `DEEPSEEK_API_KEY` est stocké côté Supabase.
   > ⚠️ Toute variable `VITE_*` est compilée dans le bundle JS : **ne pas définir
-  > `VITE_DEEPSEEK_API_KEY` sur Vercel**, sinon la clé devient publique.
-  > Activation du proxy : `supabase secrets set DEEPSEEK_API_KEY=sk-... --project-ref <ref>`
+  > `VITE_DEEPSEEK_API_KEY` sur Vercel**. Cette variable ne sert qu'au développement local,
+  > en repli si le proxy n'est pas disponible.
+  > Vérifié : sans cette variable, l'appel part bien vers
+  > `/functions/v1/deepseek` (HTTP 200) et aucune requête ne part vers `api.deepseek.com`.
 - **Repli silencieux** : sans secret, en cas d'échec réseau ou de quota, un moteur local
   (`localMealAdvice`, `localRationForecast`) prend le relais sans message d'erreur. La démo
   fonctionne donc hors ligne, et la carte indique simplement la source (`DeepSeek` ou

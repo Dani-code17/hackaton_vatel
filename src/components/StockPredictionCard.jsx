@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLanguage } from '../i18n/language'
 import { predictRations } from '../services/deepseekAI'
 import { Badge, Button, Card, Icon, Skeleton } from './ui'
@@ -11,10 +11,15 @@ export default function StockPredictionCard({ history = [], supplies = [], fallb
   const { t, lang } = useLanguage()
   const [forecast, setForecast] = useState(null)
   const [loading, setLoading] = useState(true)
+  const requestId = useRef(0)
 
   const ask = useCallback(async () => {
+    requestId.current += 1
+    const current = requestId.current
     setLoading(true)
     const result = await predictRations({ history, supplies, lang, fallbackHeadcount })
+    // Ignore une réponse obsolète (double rendu, rafraîchissement concurrent)
+    if (current !== requestId.current) return
     setForecast(result)
     setLoading(false)
   }, [history, supplies, lang, fallbackHeadcount])

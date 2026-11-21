@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLanguage } from '../i18n/language'
 import { recommendMeal } from '../services/deepseekAI'
 import { fcfa } from '../lib/format'
@@ -12,8 +12,11 @@ export default function SmartChefCard({ meals = [], allergies = [], balance = 0,
   const { t } = useLanguage()
   const [advice, setAdvice] = useState(null)
   const [loading, setLoading] = useState(true)
+  const requestId = useRef(0)
 
   const ask = useCallback(async () => {
+    requestId.current += 1
+    const current = requestId.current
     setLoading(true)
     const labels = {
       safe: t('ai.safe', { list: '' }).trim(),
@@ -27,6 +30,7 @@ export default function SmartChefCard({ meals = [], allergies = [], balance = 0,
       lang,
       labels,
     })
+    if (current !== requestId.current) return
     setAdvice(result)
     setLoading(false)
   }, [meals, allergies, balance, lang, t])
