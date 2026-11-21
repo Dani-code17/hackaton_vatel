@@ -39,6 +39,7 @@ export default function MenuPage() {
   const [message, setMessage] = useState(null)
   const [filter, setFilter] = useState('all')
   const [offer, setOffer] = useState(null)
+  const [baseFilter, setBaseFilter] = useState('all')
 
   const today = todayISO()
 
@@ -106,11 +107,18 @@ export default function MenuPage() {
   )
   const openCount = reservations.filter((r) => r.status === 'reservee').length
 
+  const bases = useMemo(
+    () => [...new Set(meals.map((meal) => meal.base_label).filter(Boolean))],
+    [meals],
+  )
+
   const filtered = useMemo(() => {
-    if (filter === 'today') return meals.filter((meal) => meal.service_date === today)
-    if (filter === 'veg') return meals.filter((meal) => meal.vegetarian)
-    return meals
-  }, [filter, meals, today])
+    let list = meals
+    if (filter === 'today') list = list.filter((meal) => meal.service_date === today)
+    if (filter === 'veg') list = list.filter((meal) => meal.vegetarian)
+    if (baseFilter !== 'all') list = list.filter((meal) => meal.base_label === baseFilter)
+    return list
+  }, [filter, baseFilter, meals, today])
 
   const grouped = useMemo(() => {
     const groups = new Map()
@@ -238,6 +246,28 @@ export default function MenuPage() {
             </button>
           ))}
         </div>
+
+        {bases.length > 1 ? (
+          <div className="no-scrollbar -mx-5 mt-2 flex gap-2 overflow-x-auto px-5 pb-1">
+            {[{ id: 'all', label: t('menu.allBases') }, ...bases.map((base) => ({ id: base, label: base }))].map(
+              (item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setBaseFilter(item.id)}
+                  className={cx(
+                    'h-9 shrink-0 rounded-full px-3.5 font-display text-[11px] font-semibold transition',
+                    baseFilter === item.id
+                      ? 'bg-coral-500 text-on-accent'
+                      : 'bg-white text-slate-500 ring-1 ring-slate-200',
+                  )}
+                >
+                  {item.label}
+                </button>
+              ),
+            )}
+          </div>
+        ) : null}
       </div>
 
       {grouped.length === 0 ? (
@@ -304,16 +334,32 @@ export default function MenuPage() {
                     <p className="mt-1 text-xs leading-relaxed text-slate-500">{meal.description}</p>
                   ) : null}
 
-                  {meal.allergens.length > 0 ? (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {meal.allergens.map((allergen) => (
-                        <Badge key={allergen} tone="slate">
-                          {allergen}
-                        </Badge>
-                      ))}
+                  {meal.base_label || meal.protein_label ? (
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      {meal.base_label ? <Badge tone="sky">{meal.base_label}</Badge> : null}
+                      {meal.protein_label && meal.protein_label !== meal.base_label ? (
+                        <>
+                          <span className="text-[11px] font-semibold text-slate-300">+</span>
+                          <Badge tone="slate">{meal.protein_label}</Badge>
+                        </>
+                      ) : null}
                     </div>
                   ) : null}
 
+                  {meal.allergens.length > 0 ? (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {meal.allergens
+                        .filter(
+                          (allergen) =>
+                            allergen.toLowerCase() !== (meal.protein_label ?? '').toLowerCase(),
+                        )
+                        .map((allergen) => (
+                          <Badge key={allergen} tone="slate">
+                            {allergen}
+                          </Badge>
+                        ))}
+                    </div>
+                  ) : null}
                   {conflicts.length > 0 ? (
                     <div className="mt-2">
                       <Alert tone="rose" title={t('menu.blockedTitle')}>

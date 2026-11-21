@@ -1,5 +1,8 @@
 # 🍽️ Cantine de Vatel
 
+> **Démo en ligne : [cantinevatel.vercel.app](https://cantinevatel.vercel.app/login)**
+> Mot de passe des comptes de démonstration : `Demo1234!`
+
 > Application web de gestion de cantine scolaire et d'entreprise.
 > **Hackathon Vatel 2026** — 10 heures de conception, développement et déploiement.
 

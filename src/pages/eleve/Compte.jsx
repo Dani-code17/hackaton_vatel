@@ -18,9 +18,11 @@ import {
 
 const QUICK_AMOUNTS = [500, 1500, 3000, 7500]
 const METHODS = [
-  { value: 'wave', label: 'Wave', icon: 'waves' },
-  { value: 'orange_money', label: 'Orange', icon: 'phone_iphone' },
-  { value: 'especes', label: 'Espèces', icon: 'payments' },
+  { value: 'wave', label: 'Wave', icon: 'waves', phone: true },
+  { value: 'orange_money', label: 'Orange Money', icon: 'phone_iphone', phone: true },
+  { value: 'mtn', label: 'MTN MoMo', icon: 'smartphone', phone: true },
+  { value: 'moov', label: 'Moov Money', icon: 'phone_android', phone: true },
+  { value: 'especes', label: 'Espèces', icon: 'payments', phone: false },
 ]
 
 const KIND_LABELS = {
@@ -38,6 +40,9 @@ export default function ComptePage() {
   const [amount, setAmount] = useState(1500)
   const [method, setMethod] = useState('wave')
   const [busy, setBusy] = useState(false)
+  const [phone, setPhone] = useState('')
+  const [step, setStep] = useState('form')
+  const [receipt, setReceipt] = useState(null)
   const [message, setMessage] = useState(null)
   const [allergiesInput, setAllergiesInput] = useState((profile?.allergies ?? []).join(', '))
   const [diet, setDiet] = useState(profile?.diet ?? '')
@@ -62,8 +67,27 @@ export default function ComptePage() {
     load()
   }, [load])
 
-  const recharge = async (event) => {
+  const selectedMethod = METHODS.find((m) => m.value === method)
+  const needsPhone = selectedMethod?.phone ?? false
+
+  // Étape 1 : on vérifie la saisie et on affiche le récapitulatif à confirmer
+  const prepare = (event) => {
     event.preventDefault()
+    setMessage(null)
+
+    if (Number(amount) < 25) {
+      setMessage({ tone: 'rose', text: t('recharge.minAmount') })
+      return
+    }
+    if (needsPhone && phone.replace(/\D/g, '').length < 8) {
+      setMessage({ tone: 'rose', text: t('recharge.phoneInvalid') })
+      return
+    }
+    setStep('confirm')
+  }
+
+  // Étape 2 : confirmation explicite, puis écriture du crédit
+  const recharge = async () => {
     setBusy(true)
     setMessage(null)
     try {
@@ -75,17 +99,29 @@ export default function ComptePage() {
       if (error) throw error
       await refresh()
       await load()
-      toast.success(
-        t('compte.topUpToast', {
-          amount: fcfa(amount),
-          method: METHODS.find((m) => m.value === method)?.label,
-        }),
-      )
+
+      const reference = `RC-${Date.now().toString(36).toUpperCase().slice(-6)}`
+      setReceipt({
+        reference,
+        amount: Number(amount),
+        method: selectedMethod?.label ?? method,
+        phone: needsPhone ? phone : null,
+        at: new Date(),
+      })
+      setStep('done')
+      toast.success(t('compte.topUpToast', { amount: fcfa(amount), method: selectedMethod?.label }))
     } catch (error) {
       setMessage({ tone: 'rose', text: error.message })
+      setStep('form')
     } finally {
       setBusy(false)
     }
+  }
+
+  const resetRecharge = () => {
+    setStep('form')
+    setReceipt(null)
+    setPhone('')
   }
 
   const saveProfile = async (event) => {
@@ -158,77 +194,151 @@ export default function ComptePage() {
 
       <Card id="recharge" className="p-4">
         <SectionTitle>{t('compte.topUp')}</SectionTitle>
-        <form onSubmit={recharge} className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            {QUICK_AMOUNTS.map((value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setAmount(value)}
-                className={cx(
-                  'rounded-lg border px-3 py-2.5 text-left transition',
-                  Number(amount) === value
-                    ? 'border-brand-900 bg-brand-900 text-white'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-brand-200',
-                )}
-              >
-                <span className="block font-display text-[13px] font-bold tabular-nums">
-                  +{fcfa(value)}
-                </span>
-                <span
-                  className={cx(
-                    'text-[10px]',
-                    Number(amount) === value ? 'text-brand-200' : 'text-slate-400',
-                  )}
-                >
-                  {value <= 500
-                    ? t('compte.snack')
-                    : t('compte.mealsCount', { count: Math.floor(value / 1500) || 1 })}
-                </span>
-              </button>
-            ))}
+
+        {step === 'done' && receipt ? (
+          <div className="space-y-3">
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-center">
+              <span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-emerald-100 text-emerald-600">
+                <Icon name="check" className="text-[22px]" filled />
+              </span>
+              <p className="mt-2 font-display text-lg font-bold text-emerald-700">
+                {fcfa(receipt.amount)}
+              </p>
+              <p className="text-[11px] text-emerald-700/80">{t('recharge.success')}</p>
+            </div>
+
+            <dl className="space-y-1.5 rounded-xl bg-slate-50 p-3 text-[11px]">
+              {[
+                [t('recharge.reference'), receipt.reference],
+                [t('compte.method'), receipt.method],
+                receipt.phone ? [t('recharge.phone'), receipt.phone] : null,
+                [t('recharge.date'), receipt.at.toLocaleString(locale)],
+                [t('recharge.newBalance'), fcfa(profile?.balance)],
+              ]
+                .filter(Boolean)
+                .map(([label, value]) => (
+                  <div key={label} className="flex justify-between gap-3">
+                    <dt className="text-slate-500">{label}</dt>
+                    <dd className="text-right font-semibold text-slate-800">{value}</dd>
+                  </div>
+                ))}
+            </dl>
+
+            <Button variant="secondary" className="w-full" onClick={resetRecharge}>
+              {t('recharge.again')}
+            </Button>
           </div>
+        ) : step === 'confirm' ? (
+          <div className="space-y-3">
+            <div className="rounded-2xl bg-brand-900 p-4 text-white">
+              <p className="font-display text-[10px] font-bold uppercase tracking-[0.12em] text-brand-200">
+                {t('recharge.summary')}
+              </p>
+              <p className="mt-1 font-display text-2xl font-bold tabular-nums">{fcfa(amount)}</p>
+              <p className="mt-1 text-[11px] text-brand-200">
+                {selectedMethod?.label}
+                {needsPhone ? ` · ${phone}` : ''}
+              </p>
+            </div>
 
-          <Field label={t('compte.amountFcfa')}>
-            <Input
-              type="number"
-              min="25"
-              step="25"
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-            />
-          </Field>
-
-          <div>
-            <p className="mb-1.5 font-display text-[10px] font-bold uppercase tracking-[0.09em] text-slate-500">
-              {t('compte.method')}
+            <p className="text-[11px] leading-relaxed text-slate-500">
+              {needsPhone
+                ? t('recharge.requestHint', { method: selectedMethod?.label, phone })
+                : t('recharge.cashHint')}
             </p>
-            <div className="grid grid-cols-3 gap-2">
-              {METHODS.map((item) => (
+
+            <Button className="w-full" disabled={busy} onClick={recharge}>
+              {busy ? t('common.loading') : t('recharge.confirm')}
+            </Button>
+            <Button variant="ghost" className="w-full" onClick={() => setStep('form')} disabled={busy}>
+              {t('common.cancel')}
+            </Button>
+          </div>
+        ) : (
+          <form onSubmit={prepare} className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              {QUICK_AMOUNTS.map((value) => (
                 <button
-                  key={item.value}
+                  key={value}
                   type="button"
-                  onClick={() => setMethod(item.value)}
+                  onClick={() => setAmount(value)}
                   className={cx(
-                    'flex flex-col items-center gap-1 rounded-lg border py-2 font-display text-[10px] font-semibold transition',
-                    method === item.value
-                      ? 'border-brand-900 bg-brand-50 text-brand-900'
-                      : 'border-slate-200 bg-white text-slate-500',
+                    'rounded-2xl border px-3 py-2.5 text-left transition',
+                    Number(amount) === value
+                      ? 'border-brand-900 bg-brand-900 text-white'
+                      : 'border-slate-200 bg-white text-slate-700',
                   )}
                 >
-                  <Icon name={item.icon} className="text-[18px]" />
-                  {item.label}
+                  <span className="block font-display text-[13px] font-bold tabular-nums">
+                    +{fcfa(value)}
+                  </span>
+                  <span
+                    className={cx(
+                      'text-[10px]',
+                      Number(amount) === value ? 'text-brand-200' : 'text-slate-400',
+                    )}
+                  >
+                    {value <= 500
+                      ? t('compte.snack')
+                      : t('compte.mealsCount', { count: Math.floor(value / 1500) || 1 })}
+                  </span>
                 </button>
               ))}
             </div>
-          </div>
 
-          <Button type="submit" className="w-full" disabled={busy}>
-            <Icon name="bolt" className="text-[17px]" />
-            {busy ? t('common.loading') : t('compte.topUpAmount', { amount: fcfa(amount) })}
-          </Button>
-          <p className="text-center text-[10px] text-slate-400">{t('compte.simulated')}</p>
-        </form>
+            <Field label={t('compte.amountFcfa')}>
+              <Input
+                type="number"
+                min="25"
+                step="25"
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+              />
+            </Field>
+
+            <div>
+              <p className="mb-1.5 font-display text-[10px] font-bold uppercase tracking-[0.09em] text-slate-500">
+                {t('compte.method')}
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {METHODS.map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => setMethod(item.value)}
+                    className={cx(
+                      'flex flex-col items-center gap-1 rounded-xl border py-2 font-display text-[10px] font-semibold transition',
+                      method === item.value
+                        ? 'border-brand-900 bg-brand-50 text-brand-900'
+                        : 'border-slate-200 bg-white text-slate-500',
+                    )}
+                  >
+                    <Icon name={item.icon} className="text-[18px]" />
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {needsPhone ? (
+              <Field label={t('recharge.phone')} hint={t('recharge.phoneHint')}>
+                <Input
+                  type="tel"
+                  inputMode="tel"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  placeholder="07 00 00 00 00"
+                />
+              </Field>
+            ) : null}
+
+            <Button type="submit" className="w-full" disabled={busy}>
+              <Icon name="arrow_forward" className="text-[17px]" />
+              {t('recharge.continue', { amount: fcfa(amount) })}
+            </Button>
+            <p className="text-center text-[10px] text-slate-400">{t('compte.simulated')}</p>
+          </form>
+        )}
       </Card>
 
       <Card className="p-4">
