@@ -1,39 +1,87 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import jsQR from 'jsqr'
 import { useLanguage } from '../i18n/language'
 import { Button, Icon } from './ui'
 
+const SCAN_INTERVAL_MS = 280
+
 /**
  * Scanner de pass QR pour le comptoir.
- * Utilise l'API BarcodeDetector du navigateur (Chrome, Edge, Android) ; si elle
- * n'existe pas ou si la caméra est refusée, le composant l'indique et la saisie
- * manuelle du code reste disponible juste en dessous.
+ *
+ * Deux décodeurs, dans cet ordre :
+ *   1. l'API native `BarcodeDetector` (Chrome, Edge, Android) ;
+ *   2. `jsQR` sur une capture canvas — indispensable sur Safari / iOS, où
+ *      `BarcodeDetector` n'existe pas.
+ *
+ * Si la caméra est refusée, indisponible, ou si la page n'est pas en HTTPS, un
+ * message clair s'affiche et la saisie manuelle du code reste disponible.
  */
 export default function QrScanner({ onScan, busy = false }) {
   const { t } = useLanguage()
   const videoRef = useRef(null)
+  const canvasRef = useRef(null)
   const streamRef = useRef(null)
   const timerRef = useRef(null)
+  const seenRef = useRef(new Set())
   const [open, setOpen] = useState(false)
   const [status, setStatus] = useState('idle')
   const [error, setError] = useState(null)
 
-  const stop = useCallback(() => {
+  const stop = useCallback((nextStatus = 'idle') => {
     if (timerRef.current) window.clearInterval(timerRef.current)
     timerRef.current = null
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop())
       streamRef.current = null
     }
-    setStatus('idle')
+    setStatus(nextStatus)
   }, [])
 
   useEffect(() => () => stop(), [stop])
 
+  // Un seul appel par code lu, même si plusieurs frames le détectent
+  const handleCode = useCallback(
+    (value) => {
+      const code = value.trim()
+      if (!code || seenRef.current.has(code)) return
+      seenRef.current.add(code)
+      stop('scanned')
+      onScan?.(code)
+    },
+    [onScan, stop],
+  )
+
+  const decodeFrame = useCallback(async (detector) => {
+    const video = videoRef.current
+    if (!video || video.readyState < 2) return null
+
+    if (detector) {
+      try {
+        const codes = await detector.detect(video)
+        return codes?.[0]?.rawValue ?? null
+      } catch {
+        return null
+      }
+    }
+
+    const canvas = canvasRef.current
+    const width = video.videoWidth || 0
+    const height = video.videoHeight || 0
+    if (!canvas || !width || !height) return null
+
+    canvas.width = width
+    canvas.height = height
+    const context = canvas.getContext('2d', { willReadFrequently: true })
+    context.drawImage(video, 0, 0, width, height)
+    const image = context.getImageData(0, 0, width, height)
+    return jsQR(image.data, width, height, { inversionAttempts: 'attemptBoth' })?.data ?? null
+  }, [])
+
   const start = async () => {
     setError(null)
+    seenRef.current = new Set()
     setOpen(true)
 
-    // Contexte non sécurisé (http:// hors localhost) : getUserMedia est interdit
     if (!window.isSecureContext) {
       setStatus('insecure')
       return
@@ -58,38 +106,33 @@ export default function QrScanner({ onScan, busy = false }) {
       }
 
       streamRef.current = stream
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        await videoRef.current.play().catch(() => {})
+      const video = videoRef.current
+      if (video) {
+        video.srcObject = stream
+        await video.play().catch(() => {})
       }
 
-      if (typeof window.BarcodeDetector !== 'function') {
-        setStatus('unsupported')
-        return
-      }
+      const detector =
+        typeof window.BarcodeDetector === 'function'
+          ? new window.BarcodeDetector({ formats: ['qr_code'] })
+          : null
 
-      const detector = new window.BarcodeDetector({ formats: ['qr_code'] })
       setStatus('scanning')
 
       timerRef.current = window.setInterval(async () => {
-        if (!videoRef.current || busy) return
-        if (videoRef.current.readyState < 2) return
+        if (busy) return
         try {
-          const codes = await detector.detect(videoRef.current)
-          const value = codes?.[0]?.rawValue
-          if (value) {
-            stop()
-            onScan?.(value)
-          }
+          const value = await decodeFrame(detector)
+          if (value) handleCode(value)
         } catch {
           // image pas encore nette : on réessaie au prochain tick
         }
-      }, 300)
+      }, SCAN_INTERVAL_MS)
     } catch (cameraError) {
       const name = cameraError?.name ?? ''
-      setStatus(name === 'NotAllowedError' || name === 'SecurityError' ? 'denied' : 'failed')
+      const next = name === 'NotAllowedError' || name === 'SecurityError' ? 'denied' : 'failed'
       setError(cameraError?.message ?? null)
-      stop()
+      stop(next)
     }
   }
 
@@ -98,34 +141,38 @@ export default function QrScanner({ onScan, busy = false }) {
     setOpen(false)
   }
 
+  const messages = {
+    idle: t('scan.idle'),
+    starting: t('scan.starting'),
+    scanning: t('scan.hint'),
+    scanned: t('scan.scanned'),
+    insecure: t('scan.insecure'),
+    unsupported: t('scan.unsupported'),
+    denied: t('scan.denied'),
+    failed: t('scan.failed'),
+  }
+
   return (
     <div className="space-y-2">
       {open ? (
         <div className="overflow-hidden rounded-2xl bg-slate-900">
-          <video
-            ref={videoRef}
-            playsInline
-            autoPlay
-            muted
-            className="h-56 w-full bg-black object-cover"
-          />
+          <div className="relative">
+            <video
+              ref={videoRef}
+              playsInline
+              autoPlay
+              muted
+              className="h-56 w-full bg-black object-cover"
+            />
+            {status === 'scanning' ? (
+              <span className="pointer-events-none absolute inset-6 rounded-xl border-2 border-white/70" />
+            ) : null}
+          </div>
+          <canvas ref={canvasRef} className="hidden" />
+
           <div className="bg-slate-900 px-3 py-2.5">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[11px] text-white/80">
-                {status === 'scanning'
-                  ? t('scan.hint')
-                  : status === 'starting'
-                    ? t('scan.starting')
-                    : status === 'unsupported'
-                      ? t('scan.unsupported')
-                      : status === 'insecure'
-                        ? t('scan.insecure')
-                        : status === 'denied'
-                          ? t('scan.denied')
-                          : status === 'failed'
-                            ? t('scan.failed')
-                            : t('scan.idle')}
-              </p>
+              <p className="text-[11px] text-white/80">{messages[status] ?? messages.idle}</p>
               <button
                 type="button"
                 onClick={close}
@@ -134,7 +181,8 @@ export default function QrScanner({ onScan, busy = false }) {
                 {t('common.close')}
               </button>
             </div>
-            {status === 'unsupported' ? (
+
+            {['unsupported', 'failed', 'denied', 'insecure', 'scanned'].includes(status) ? (
               <button
                 type="button"
                 onClick={start}
@@ -144,6 +192,7 @@ export default function QrScanner({ onScan, busy = false }) {
               </button>
             ) : null}
           </div>
+
           {error && status !== 'unsupported' ? (
             <p className="px-3 pb-2 text-[10px] text-coral-300">{error}</p>
           ) : null}
