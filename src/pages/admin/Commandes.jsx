@@ -4,7 +4,7 @@ import { formatDay, formatTime, todayISO } from '../../lib/format'
 import { useLanguage } from '../../i18n/language'
 import FlashOfferCard from '../../components/FlashOfferCard'
 import QrScanner from '../../components/QrScanner'
-import { Alert, Badge, Button, Card, Empty, Field, Input, SectionTitle, Spinner, Stat } from '../../components/ui'
+import { Alert, Badge, Button, Card, Empty, Field, Icon, Input, SectionTitle, Spinner, Stat } from '../../components/ui'
 
 export default function CommandesPage() {
   const { t } = useLanguage()
@@ -13,6 +13,7 @@ export default function CommandesPage() {
   const [token, setToken] = useState('')
   const [message, setMessage] = useState(null)
   const [busyId, setBusyId] = useState(null)
+  const [justServed, setJustServed] = useState(null)
 
   const today = todayISO()
 
@@ -46,12 +47,13 @@ export default function CommandesPage() {
       const { data, error } = await supabase.rpc('serve_reservation', { p_token: qrToken })
       if (error) throw error
       const allergies = data?.allergies ?? []
-      setMessage({
-        tone: allergies.length ? 'amber' : 'teal',
-        text: allergies.length
-          ? `${label ?? data.student} servi — ⚠ allergie : ${allergies.join(', ')}`
-          : `${label ?? data.student} servi (${data.meal})`,
+      setJustServed({
+        student: data?.student ?? label ?? '—',
+        meal: data?.meal ?? '',
+        allergies,
+        at: new Date(),
       })
+      setToken('')
       await load()
     } catch (error) {
       setMessage({ tone: 'rose', text: error.message })
@@ -99,6 +101,61 @@ export default function CommandesPage() {
 
       <Card>
         <SectionTitle>{t('orders.qrScan')}</SectionTitle>
+
+        {justServed ? (
+          <div
+            className={
+              'mb-3 rounded-2xl p-3 ring-1 ' +
+              (justServed.allergies.length > 0
+                ? 'bg-coral-100 ring-coral-300'
+                : 'bg-emerald-50 ring-emerald-200')
+            }
+          >
+            <div className="flex items-start gap-2">
+              <span
+                className={
+                  'grid h-9 w-9 shrink-0 place-items-center rounded-full ' +
+                  (justServed.allergies.length > 0
+                    ? 'bg-coral-500 text-on-accent'
+                    : 'bg-emerald-500 text-white')
+                }
+              >
+                <Icon
+                  name={justServed.allergies.length > 0 ? 'warning' : 'check'}
+                  className="text-[19px]"
+                  filled
+                />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p
+                  className={
+                    'font-display text-[13px] font-bold ' +
+                    (justServed.allergies.length > 0 ? 'text-coral-700' : 'text-emerald-700')
+                  }
+                >
+                  {justServed.allergies.length > 0
+                    ? t('scan.servedAllergy', { name: justServed.student })
+                    : t('scan.servedOk', { name: justServed.student })}
+                </p>
+                <p className="mt-0.5 text-[11px] text-slate-600">{justServed.meal}</p>
+                {justServed.allergies.length > 0 ? (
+                  <p className="mt-1 rounded-lg bg-white/70 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.04em] text-coral-700">
+                    ⚠ {t('scan.allergyAlert', { list: justServed.allergies.join(', ') })}
+                  </p>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                onClick={() => setJustServed(null)}
+                aria-label={t('common.close')}
+                className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-slate-400"
+              >
+                <Icon name="close" className="text-[16px]" />
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         <QrScanner onScan={(value) => serve(value.trim(), null)} busy={Boolean(busyId)} />
         <p className="my-2 text-center font-display text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
           {t('scan.orManual')}
