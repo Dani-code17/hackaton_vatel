@@ -6,11 +6,13 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
+  const [school, setSchool] = useState(null)
   const [loading, setLoading] = useState(true)
 
   const loadProfile = useCallback(async (userId) => {
     if (!userId) {
       setProfile(null)
+      setSchool(null)
       return null
     }
     const { data, error } = await supabase
@@ -22,9 +24,23 @@ export function AuthProvider({ children }) {
     if (error) {
       console.error('Chargement du profil impossible', error)
       setProfile(null)
+      setSchool(null)
       return null
     }
+
     setProfile(data)
+
+    if (data?.school_id) {
+      const { data: schoolRow } = await supabase
+        .from('schools')
+        .select('id, name, model, meal_price, city')
+        .eq('id', data.school_id)
+        .maybeSingle()
+      setSchool(schoolRow ?? null)
+    } else {
+      setSchool(null)
+    }
+
     return data
   }, [])
 
@@ -64,8 +80,17 @@ export function AuthProvider({ children }) {
   }, [loadProfile, session])
 
   const value = useMemo(
-    () => ({ session, user: session?.user ?? null, profile, loading, signIn, signOut, refresh }),
-    [session, profile, loading, signIn, signOut, refresh],
+    () => ({
+      session,
+      user: session?.user ?? null,
+      profile,
+      school,
+      loading,
+      signIn,
+      signOut,
+      refresh,
+    }),
+    [session, profile, school, loading, signIn, signOut, refresh],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

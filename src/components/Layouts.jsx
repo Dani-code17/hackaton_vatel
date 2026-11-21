@@ -1,41 +1,28 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { cx, fcfa, ROLE_LABELS } from '../lib/format'
-import SchoolSwitcher from './SchoolSwitcher'
+import { useUniverse } from '../context/UniverseContext'
+import { cx, fcfa } from '../lib/format'
+import UserMenu from './UserMenu'
 import VatelLogo from './VatelLogo'
-
-function LogoutButton() {
-  const { signOut } = useAuth()
-  return (
-    <button
-      type="button"
-      onClick={signOut}
-      className="rounded-lg px-2 py-1 text-xs font-semibold text-brand-200 hover:bg-white/10 hover:text-white"
-      title="Se déconnecter"
-    >
-      Quitter
-    </button>
-  )
-}
 
 export function MobileShell({ nav, title }) {
   const { profile } = useAuth()
+  const { config } = useUniverse()
   const { pathname } = useLocation()
+
   const current = [...nav]
     .sort((a, b) => b.to.length - a.to.length)
     .find((item) => pathname.startsWith(item.to))
-  const screenTitle = title ?? current?.label ?? 'Cantine'
+  const screenTitle = title ?? current?.label ?? config.name
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col bg-shell">
       <header className="sticky top-0 z-20 bg-brand-900 px-4 pb-3 pt-3 text-white shadow-sm">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <VatelLogo light />
+            <VatelLogo light compact />
             <h1 className="mt-2 text-lg font-bold">{screenTitle}</h1>
-            <p className="text-xs text-brand-200">
-              {profile?.full_name} · {ROLE_LABELS[profile?.role] ?? ''}
-            </p>
+            <p className="text-xs text-brand-200">{config.chip}</p>
           </div>
           <div className="text-right">
             {profile?.role === 'eleve' ? (
@@ -46,8 +33,8 @@ export function MobileShell({ nav, title }) {
                 <p className="text-sm font-bold text-white">{fcfa(profile.balance)}</p>
               </div>
             ) : null}
-            <div className="mt-1">
-              <LogoutButton />
+            <div className="mt-1 flex justify-end">
+              <UserMenu light />
             </div>
           </div>
         </div>
@@ -66,7 +53,7 @@ export function MobileShell({ nav, title }) {
                 end={item.end}
                 className={({ isActive }) =>
                   cx(
-                    'flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-semibold transition',
+                    'flex flex-col items-center gap-0.5 px-1 py-2 text-[10px] font-semibold leading-tight transition',
                     isActive ? 'text-white' : 'text-brand-200/70 hover:text-brand-200',
                   )
                 }
@@ -80,7 +67,7 @@ export function MobileShell({ nav, title }) {
                       )}
                     />
                     <span className="text-lg leading-none">{item.icon}</span>
-                    {item.label}
+                    <span className="text-center">{item.label}</span>
                   </>
                 )}
               </NavLink>
@@ -88,62 +75,6 @@ export function MobileShell({ nav, title }) {
           ))}
         </ul>
       </nav>
-    </div>
-  )
-}
-
-export function StaffShell({ tabs, title, subtitle }) {
-  const { profile } = useAuth()
-
-  return (
-    <div className="min-h-dvh bg-shell">
-      <header className="bg-brand-900 text-white">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <div>
-            <VatelLogo light compact />
-            <h1 className="mt-1.5 text-base font-bold">{title}</h1>
-            <p className="text-xs text-brand-200">
-              {profile?.full_name}
-              {profile && profile.full_name !== ROLE_LABELS[profile.role]
-                ? ` · ${ROLE_LABELS[profile.role] ?? ''}`
-                : ''}
-              {subtitle ? ` · ${subtitle}` : ''}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <SchoolSwitcher />
-            <LogoutButton />
-          </div>
-        </div>
-
-        <div className="no-scrollbar mx-auto max-w-5xl overflow-x-auto px-2">
-          <ul className="flex gap-1">
-            {tabs.map((tab) => (
-              <li key={tab.to}>
-                <NavLink
-                  to={tab.to}
-                  end={tab.end}
-                  className={({ isActive }) =>
-                    cx(
-                      'inline-flex items-center gap-1 whitespace-nowrap rounded-t-lg border-b-2 px-3 py-2 text-sm font-semibold transition',
-                      isActive
-                        ? 'border-brand-200 text-white'
-                        : 'border-transparent text-brand-200/80 hover:text-white',
-                    )
-                  }
-                >
-                  <span aria-hidden="true">{tab.icon}</span>
-                  {tab.label}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-5xl px-4 py-5">
-        <Outlet />
-      </main>
     </div>
   )
 }

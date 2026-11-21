@@ -92,12 +92,31 @@ comptoir, notifications temps réel, notation des plats.
 | Fond | `#F4F7FA` | Arrière-plan général |
 
 - Jetons déclarés dans `src/index.css` (`@theme`) : `brand-50/100/200/300/500/700/900`,
-  `coral-100/200/300/500/600/700`, `shell`. Ne jamais écrire une couleur brute dans un composant.
+  `coral-100/200/300/500/600/700`, `on-accent`, `shell`. Ne jamais écrire une couleur brute
+  dans un composant : les jetons sont surchargés par univers.
 - Typographie Montserrat, repli Inter puis system-ui.
-- Texte des boutons corail : bleu marine (`text-brand-900`) pour respecter le contraste AA.
+- Texte des boutons d'action : `text-on-accent` (marine sur corail à Vatel, blanc sur bleu à ACMC),
+  ce qui garantit le contraste AA dans les trois univers.
 - Logo : composant `VatelLogo` (« VATEL — Cantine Campus Abidjan »).
 
-## 11. Multi-modèles d'établissement
+## 12. Super-App et univers visuels
+
+Trois univers cohabitent : `vatel` (défaut), `gbt`, `acmc`.
+
+- **Palettes** : uniquement des variables CSS définies dans `src/index.css` sous
+  `[data-universe="…"]`. Ne jamais coder une couleur en dur dans un composant : utiliser
+  `brand-*`, `coral-*`, `on-accent` ou `shell`, qui suivent l'univers actif.
+- **Définition des univers** : `src/lib/universes.js` (titre, description, palette, navigation).
+- **Contexte** : `src/context/UniverseContext.jsx` déduit l'univers du modèle d'établissement ;
+  le rôle `conseiller_dcs` est toujours rattaché à `gbt`.
+- **Coquilles** : `UniverseShell` (personnel : en-tête + navigation basse + feuille « Modules »)
+  et `MobileShell` (élève et parent, navigation issue de l'univers).
+- **Bascule** : `AppSwitcher` ouvre le « Sélecteur d'Univers », appelle `switch_active_school`
+  puis recharge l'application ; un écran de transition « Chargement de l'espace… » couvre l'attente.
+- Ne pas dupliquer les pages par univers : le thème et les libellés de navigation changent,
+  le code métier reste unique.
+
+## 13. Multi-modèles d'établissement
 
 Chaque établissement porte un `model` : `public_dcs`, `prive` ou `entreprise`.
 

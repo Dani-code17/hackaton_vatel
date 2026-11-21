@@ -100,6 +100,29 @@ Concrètement :
   groupements de producteurs locaux, fournisseur).
 - L'indicateur **Impact PAM** n'apparaît que sur le modèle public et dans la supervision.
 
+### Super-App : trois univers dans une application
+
+Le sélecteur d'établissement est devenu un **portail à 3 univers** (bouton 9 points en haut
+à droite → « Sélecteur d'Univers » → écran de transition « Chargement de l'espace… »).
+Chaque univers possède sa palette, son vocabulaire et sa barre de navigation.
+
+| Univers | En-tête | Accents | Fond | Navigation basse |
+| --- | --- | --- | --- | --- |
+| **Vatel Campus** (défaut) | `#072A5D` | `#FF675B` / `#89C2EA` | `#F4F7FA` | Carte · Pass QR · Solde & Wave · Gestion Chef |
+| **EPP GBT — DCS / PAM** | `#065F46` | `#D97706` | `#FFFBEB` | Cahier 25F · Rations & Stock · Hygiène Live · Supervision PAM |
+| **ACMC Entreprise** | `#0F172A` | `#2563EB` | `#F8FAFC` | Menu Express · Badge 50% · Portail RH |
+
+- Titres : « VATEL • Cantine Campus Abidjan », « CANTINES SCOLAIRES GBT • Suivi DCS & PAM »,
+  « ACMC CORPORATE • Restauration Salariés ».
+- Les couleurs passent par des **variables CSS** (`[data-universe="…"]` dans `src/index.css`) :
+  les mêmes utilitaires Tailwind (`bg-brand-900`, `bg-coral-500`, `bg-shell`) changent de teinte
+  sans qu'aucune page ne soit dupliquée.
+- Le rôle `conseiller_dcs` est toujours rattaché à l'univers GBT.
+- Un bouton **Modules** (⋯) reste disponible pour ne jamais perdre l'accès aux huit écrans du
+  cahier de gestion.
+- Les étudiants et parents n'ont pas le sélecteur : seuls gérant et directeur peuvent basculer,
+  et la RLS Supabase continue de cloisonner les données par établissement.
+
 ### Indicateur d'impact PAM
 
 | Donnée | Valeur |
@@ -162,9 +185,10 @@ besoin journalier de l'établissement, plafonnée à 25 jours comme dans le réf
 | Cartes | `#FFFFFF` | Contenants |
 | Typographie | Montserrat (repli Inter, system-ui) | Toute l'interface |
 
-Les jetons sont déclarés une seule fois dans `src/index.css` (`@theme`) et consommés via les
-utilitaires `brand-*`, `coral-*` et `shell`. Le logo « VATEL — Cantine Campus Abidjan »
-est défini dans `src/components/VatelLogo.jsx`.
+Les jetons sont déclarés une seule fois dans `src/index.css` (`@theme`) puis **surchargés par
+univers** via `[data-universe="vatel|gbt|acmc"]`. Les utilitaires `brand-*`, `coral-*`,
+`on-accent` et `shell` suivent donc automatiquement l'univers actif. Le logo
+« VATEL — Cantine Campus Abidjan » est défini dans `src/components/VatelLogo.jsx`.
 
 > Le corail porte un texte bleu marine : ce couple atteint un contraste de 4,9:1 (conforme
 > WCAG AA), là où du blanc sur corail plafonnerait à 2,8:1.

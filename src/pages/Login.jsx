@@ -46,7 +46,7 @@ export default function Login() {
     <div className="min-h-dvh bg-gradient-to-b from-brand-900 via-brand-700 to-shell px-4 py-10">
       <div className="mx-auto w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center gap-3 text-center text-white">
-          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-coral-500 text-2xl font-extrabold text-brand-900">
+          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-coral-500 text-2xl font-extrabold text-on-accent">
             V
           </div>
           <div>

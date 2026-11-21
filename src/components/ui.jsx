@@ -9,7 +9,7 @@ export function Card({ className = '', children }) {
 }
 
 const BUTTON_VARIANTS = {
-  primary: 'bg-coral-500 text-brand-900 hover:bg-coral-600 active:bg-coral-600 shadow-sm',
+  primary: 'bg-coral-500 text-on-accent hover:bg-coral-600 active:bg-coral-600 shadow-sm',
   secondary: 'bg-brand-50 text-brand-900 hover:bg-brand-100',
   ghost: 'text-slate-600 hover:bg-slate-100',
   danger: 'bg-coral-700 text-white hover:bg-coral-700',

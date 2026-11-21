@@ -3,7 +3,7 @@
 @theme {
   --font-sans: 'Montserrat', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
-  /* Charte Vatel */
+  /* Palette par defaut : univers Vatel (surchargee par [data-universe]) */
   --color-brand-50: #eaf1fa;
   --color-brand-100: #d6e6f6;
   --color-brand-200: #89c2ea;
@@ -19,7 +19,78 @@
   --color-coral-600: #ef5044;
   --color-coral-700: #a83129;
 
+  --color-on-accent: #072a5d;
   --color-shell: #f4f7fa;
+}
+
+/* ------------------------------------------------------------------
+   Univers 1 — Vatel Campus (bleu marine / corail / bleu ciel)
+   ------------------------------------------------------------------ */
+[data-universe='vatel'] {
+  --color-brand-50: #eaf1fa;
+  --color-brand-100: #d6e6f6;
+  --color-brand-200: #89c2ea;
+  --color-brand-300: #6aabd8;
+  --color-brand-500: #89c2ea;
+  --color-brand-700: #0b3e7f;
+  --color-brand-900: #072a5d;
+
+  --color-coral-100: #ffe9e6;
+  --color-coral-200: #ffd2cc;
+  --color-coral-300: #ffb3ac;
+  --color-coral-500: #ff675b;
+  --color-coral-600: #ef5044;
+  --color-coral-700: #a83129;
+
+  --color-on-accent: #072a5d;
+  --color-shell: #f4f7fa;
+}
+
+/* ------------------------------------------------------------------
+   Univers 2 — EPP GBT, cantine publique DCS / PAM
+   (vert emeraude / ambre / fond chaud)
+   ------------------------------------------------------------------ */
+[data-universe='gbt'] {
+  --color-brand-50: #fffbeb;
+  --color-brand-100: #fef3c7;
+  --color-brand-200: #fcd34d;
+  --color-brand-300: #f59e0b;
+  --color-brand-500: #d97706;
+  --color-brand-700: #047857;
+  --color-brand-900: #065f46;
+
+  --color-coral-100: #fef3c7;
+  --color-coral-200: #fde68a;
+  --color-coral-300: #fbbf24;
+  --color-coral-500: #d97706;
+  --color-coral-600: #b45309;
+  --color-coral-700: #92400e;
+
+  --color-on-accent: #1f2937;
+  --color-shell: #fffbeb;
+}
+
+/* ------------------------------------------------------------------
+   Univers 3 — ACMC, cantine d'entreprise (slate / bleu corporate)
+   ------------------------------------------------------------------ */
+[data-universe='acmc'] {
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #93c5fd;
+  --color-brand-300: #60a5fa;
+  --color-brand-500: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-900: #0f172a;
+
+  --color-coral-100: #dbeafe;
+  --color-coral-200: #bfdbfe;
+  --color-coral-300: #93c5fd;
+  --color-coral-500: #2563eb;
+  --color-coral-600: #1d4ed8;
+  --color-coral-700: #1e3a8a;
+
+  --color-on-accent: #ffffff;
+  --color-shell: #f8fafc;
 }
 
 html {
@@ -31,6 +102,7 @@ body {
   color: #1f2937;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  transition: background-color 250ms ease;
 }
 
 .no-scrollbar {
@@ -39,4 +111,19 @@ body {
 
 .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+@keyframes universe-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.universe-fade {
+  animation: universe-fade 260ms ease-out both;
 }

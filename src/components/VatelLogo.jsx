@@ -5,7 +5,7 @@ export default function VatelLogo({ compact = false, light = false }) {
     <div className="flex items-center gap-2">
       <span
         className={cx(
-          'grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-coral-500 text-sm font-extrabold text-brand-900',
+          'grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-coral-500 text-sm font-extrabold text-on-accent',
           compact && 'h-7 w-7 text-xs',
         )}
       >
