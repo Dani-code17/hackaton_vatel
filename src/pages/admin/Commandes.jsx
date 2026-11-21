@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatDay, formatTime, todayISO } from '../../lib/format'
 import { useLanguage } from '../../i18n/language'
+import FlashOfferCard from '../../components/FlashOfferCard'
 import { Alert, Badge, Button, Card, Empty, Field, Input, SectionTitle, Spinner, Stat } from '../../components/ui'
 
 export default function CommandesPage() {
@@ -112,6 +113,8 @@ export default function CommandesPage() {
           </Button>
         </form>
       </Card>
+
+      <FlashOfferCard onPublished={load} />
 
       <Card>
         <SectionTitle>{t('orders.queue')}</SectionTitle>

@@ -30,7 +30,7 @@ function writeCache(meals) {
 
 export default function MenuPage() {
   const { user, profile, refresh } = useAuth()
-  const { t, lang } = useLanguage()
+  const { t, lang, locale } = useLanguage()
   const toast = useToast()
   const [meals, setMeals] = useState([])
   const [reservations, setReservations] = useState([])
@@ -38,6 +38,7 @@ export default function MenuPage() {
   const [busyId, setBusyId] = useState(null)
   const [message, setMessage] = useState(null)
   const [filter, setFilter] = useState('all')
+  const [offer, setOffer] = useState(null)
 
   const today = todayISO()
 
@@ -45,7 +46,7 @@ export default function MenuPage() {
     if (!user) return
     setLoading(true)
     const weekEnd = addDays(today, 6)
-    const [mealsResult, reservationsResult] = await Promise.all([
+    const [mealsResult, reservationsResult, offersResult] = await Promise.all([
       supabase
         .from('meals')
         .select('*')
@@ -58,6 +59,14 @@ export default function MenuPage() {
         .select('id, meal_id, status')
         .eq('user_id', user.id)
         .neq('status', 'annulee'),
+      supabase
+        .from('flash_offers')
+        .select('discount_pct, ends_at')
+        .eq('service_date', today)
+        .is('closed_at', null)
+        .gt('ends_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1),
     ])
 
     if (mealsResult.error) {
@@ -74,6 +83,7 @@ export default function MenuPage() {
     }
 
     setReservations(reservationsResult.data ?? [])
+    setOffer(offersResult.data?.[0] ?? null)
     setLoading(false)
   }, [today, user])
 
@@ -230,6 +240,25 @@ export default function MenuPage() {
         <Empty title={t('menu.empty')} description={t('menu.emptyHint')} />
       ) : null}
 
+      {offer ? (
+        <div className="flex items-center justify-between gap-2 rounded-2xl bg-coral-500 px-4 py-2.5 text-on-accent shadow-[0_8px_20px_rgba(255,89,89,0.24)]">
+          <div className="min-w-0">
+            <p className="font-display text-[12px] font-bold leading-tight">
+              {t('flash.banner', { pct: offer.discount_pct })}
+            </p>
+            <p className="text-[10px] opacity-90">
+              {t('flash.bannerUntil', {
+                time: new Date(offer.ends_at).toLocaleTimeString(locale, {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                }),
+              })}
+            </p>
+          </div>
+          <Icon name="percent" className="shrink-0 text-[22px]" filled />
+        </div>
+      ) : null}
+
       <SmartChefCard meals={filtered} allergies={profile?.allergies ?? []} balance={profile?.balance} lang={lang} />
 
       {grouped.map(([date, dayMeals]) => (
@@ -244,6 +273,8 @@ export default function MenuPage() {
           {dayMeals.map((meal) => {
             const reserved = reservedIds.has(meal.id)
             const conflicts = allergyConflicts(meal.allergens, myAllergies)
+            const discountPct = offer && meal.service_date === today ? offer.discount_pct : 0
+            const payablePrice = Math.round((meal.price * (100 - discountPct)) / 100)
 
             return (
               <Card key={meal.id} className="overflow-hidden">
@@ -253,6 +284,7 @@ export default function MenuPage() {
                   </div>
                   <div className="absolute right-2 top-2 flex flex-wrap justify-end gap-1">
                     {meal.vegetarian ? <Badge tone="sky">{t('menu.vegetarian')}</Badge> : null}
+                    {discountPct > 0 ? <Badge tone="amber">−{discountPct} %</Badge> : null}
                     {conflicts.length > 0 ? (
                       <Badge tone="rose">⚠ {t('menu.allergen')}</Badge>
                     ) : null}
@@ -291,7 +323,12 @@ export default function MenuPage() {
                         {t('menu.studentPrice')}
                       </p>
                       <p className="font-display text-lg font-bold tabular-nums text-brand-900">
-                        {fcfa(meal.price)}
+                        {fcfa(payablePrice)}
+                        {discountPct > 0 ? (
+                          <span className="ml-1.5 text-[11px] font-semibold text-slate-400 line-through">
+                            {fcfa(meal.price)}
+                          </span>
+                        ) : null}
                       </p>
                     </div>
 
@@ -302,12 +339,12 @@ export default function MenuPage() {
                     ) : (
                       <Button
                         className="h-11 px-3 text-[12px]"
-                        disabled={busyId === meal.id || profile?.balance < meal.price}
+                        disabled={busyId === meal.id || profile?.balance < payablePrice}
                         onClick={() => reserve(meal)}
                       >
                         {busyId === meal.id
                           ? t('common.loading')
-                          : profile?.balance < meal.price
+                          : profile?.balance < payablePrice
                             ? t('menu.insufficientBalance')
                             : t('menu.reserve')}
                         {busyId === meal.id ? null : (

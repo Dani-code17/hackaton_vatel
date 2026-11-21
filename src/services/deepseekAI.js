@@ -190,8 +190,68 @@ export async function recommendMeal({ meals = [], allergies = [], balance = 0, l
   }
 }
 
-/** Prévision locale : moyenne pondérée de l'historique + détection des ruptures. */
-export function localRationForecast({ history = [], supplies = [], fallbackHeadcount = 0 }) {
+/**
+ * Offre de fin de service : quelle remise appliquer aux portions restantes.
+ * Moteur local : plus il reste de portions, plus la remise est forte.
+ */
+export function localFlashOffer({ meals = [], reservedByMeal = {}, lang = 'fr' }) {
+  const capacity = meals.reduce((sum, meal) => sum + Number(meal.capacity ?? 0), 0)
+  const reserved = meals.reduce((sum, meal) => sum + Number(reservedByMeal[meal.id] ?? 0), 0)
+  const remaining = Math.max(0, capacity - reserved)
+  const ratio = capacity > 0 ? remaining / capacity : 0
+
+  let discountPct = 30
+  if (ratio >= 0.6) discountPct = 50
+  else if (ratio >= 0.3) discountPct = 30
+  else if (remaining > 0) discountPct = 70
+
+  const message =
+    lang === 'en'
+      ? `${remaining} portions left in ${meals.length} dish(es). Cut the price now to avoid waste.`
+      : `${remaining} portions restantes sur ${meals.length} plat(s). Baisser le prix maintenant pour éviter le gaspillage.`
+
+  return { source: 'local', discountPct, remaining, capacity, reserved, message }
+}
+
+/**
+ * Demande au modèle la remise la plus pertinente pour écouler les portions.
+ * Repli silencieux sur le calcul local si l'IA n'est pas disponible.
+ */
+export async function suggestFlashOffer({ meals = [], reservedByMeal = {}, lang = 'fr' }) {
+  const fallback = localFlashOffer({ meals, reservedByMeal, lang })
+  if (!isDeepSeekEnabled() || meals.length === 0) return fallback
+
+  const system =
+    'Tu es responsable anti-gaspillage d’une cantine. Choisis une remise entre 10 et 70 % ' +
+    '(multiple de 10) pour écouler les portions restantes avant la fermeture. ' +
+    'Réponds uniquement en JSON : {"discountPct":<entier>,"message":"<max 90 caractères>"}.'
+  const user = JSON.stringify({
+    langue: lang,
+    plats: meals.map((meal) => ({
+      nom: meal.name,
+      capacite: Number(meal.capacity ?? 0),
+      reserves: Number(reservedByMeal[meal.id] ?? 0),
+      prix: Number(meal.price ?? 0),
+    })),
+  })
+
+  try {
+    const answer = await askDeepSeek({ system, user })
+    const pct = Math.round(Number(answer.discountPct) / 10) * 10
+    if (!Number.isFinite(pct) || pct < 10 || pct > 70) throw new Error('Remise invalide')
+
+    return {
+      ...fallback,
+      source: 'ia',
+      discountPct: pct,
+      message: String(answer.message ?? fallback.message).slice(0, 140),
+    }
+  } catch {
+    return fallback
+  }
+}
+
+/** Prévision locale : moyenne pondérée de l'historique + détection des ruptures. */export function localRationForecast({ history = [], supplies = [], fallbackHeadcount = 0 }) {
   const headcount = forecastHeadcount(history) || Math.round(Number(fallbackHeadcount) || 0)
   const risks = lowStockRisks({ headcount, supplies })
   const served = history.map((entry) => Number(entry?.served ?? entry) || 0).filter(Boolean)

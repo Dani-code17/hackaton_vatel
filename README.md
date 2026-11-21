@@ -162,7 +162,6 @@ L'implémentation tient dans `src/i18n/translations.js` (dictionnaire FR/EN),
 Une clé manquante en anglais retombe automatiquement sur le français.
 
 ### Assistant IA « Vatel Smart Chef & Anti-Gaspillage »
-
 Deux cartes exploitent l'API officielle **DeepSeek** (`https://api.deepseek.com/chat/completions`,
 modèle `deepseek-chat`) via `src/services/deepseekAI.js` :
 
@@ -170,6 +169,18 @@ modèle `deepseek-chat`) via `src/services/deepseekAI.js` :
 | --- | --- | --- |
 | **Vatel Smart Chef IA** | Carte du jour (élève / salarié) | Reçoit le profil d'allergies, le solde, les plats disponibles et la langue active ; renvoie le plat le plus sûr avec un score de compatibilité et une justification courte. Bouton « Actualiser le conseil IA ». |
 | **Prédiction IA Anti-Gaspillage** | Tableau de bord du gérant | Analyse l'historique des repas servis et les stocks pour estimer les rations du lendemain et lister les risques de rupture (riz, sardines, huile). |
+| **Offre de fin de service** | Commandes du jour (gérant) | Propose une remise (10 à 70 %) pour écouler les portions restantes, avec un message prêt à publier ; l'élève voit un bandeau et le prix barré, et paie le prix remisé. |
+
+#### Offre de fin de service : comment le prix reste juste
+
+- La remise est **calculée ou suggérée par l'IA**, puis **publiée** par le gérant avec une durée
+  (30, 60 ou 90 minutes). Elle s'arrête seule à l'échéance ou quand le gérant la clôture.
+- Le **prix réellement payé** est calculé côté base (fonction transactionnelle) et **figé sur la
+  réservation** : une annulation rembourse exactement ce qui a été débité, même si l'offre a été
+  clôturée entre-temps. Vérifié : plat à 2 000 F → 1 000 F payés sous −50 %, annulation →
+  1 000 F recrédités, solde identique à l'état initial.
+- RLS : un élève ne voit que les offres de son établissement, seul un gérant ou un directeur
+  peut en créer ou en clôturer une.
 
 - La clé **n'est jamais committée** et **n'est pas incluse dans le bundle** : le navigateur
   appelle la fonction Edge `deepseek` (`supabase/functions/deepseek`), déployée sur le projet
