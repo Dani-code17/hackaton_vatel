@@ -231,6 +231,7 @@ export default function DashboardPage() {
         history={state.history}
         supplies={state.supplies}
         fallbackHeadcount={school?.enrolled_count ?? 0}
+        reservedToday={state.reservations.filter((r) => r.status !== 'annulee').length}
       />
 
       <div className="grid gap-4">

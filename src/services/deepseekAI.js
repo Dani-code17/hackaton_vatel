@@ -351,6 +351,8 @@ export async function predictRations({
       confidence: clampScore(answer.confidence, fallback.confidence),
       risks: lowStockRisks({ headcount, supplies }),
       days: fallback.days,
+      booked: fallback.booked ?? null,
+      absencePct: fallback.absencePct ?? null,
       note: String(answer.note ?? '').slice(0, 140),
     }
   } catch {
