@@ -70,6 +70,43 @@ export function AuthProvider({ children }) {
     if (error) throw error
   }, [])
 
+  /**
+   * Inscription publique : passe par l'Edge Function `signup` (compte confirmé
+   * immédiatement, service_role côté serveur). Repli sur l'API Auth standard si
+   * la fonction n'est pas déployée. Seuls les rôles élève et parent sont acceptés.
+   */
+  const signUp = useCallback(async ({ email, password, fullName, role = 'eleve' }) => {
+    const payload = {
+      email: email.trim().toLowerCase(),
+      password,
+      fullName: fullName.trim(),
+      role: role === 'parent' ? 'parent' : 'eleve',
+    }
+
+    const { data: created, error: functionError } = await supabase.functions.invoke('signup', {
+      body: payload,
+    })
+
+    if (functionError || created?.error) {
+      const message = created?.error ?? functionError?.message ?? ''
+      const functionMissing = /not found|404|Failed to send/i.test(String(message))
+      if (!functionMissing) throw new Error(message || 'Inscription impossible')
+
+      const { error } = await supabase.auth.signUp({
+        email: payload.email,
+        password,
+        options: { data: { full_name: payload.fullName, role: payload.role } },
+      })
+      if (error) throw error
+    }
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: payload.email,
+      password,
+    })
+    if (signInError) throw signInError
+  }, [])
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut()
     setProfile(null)
@@ -87,10 +124,11 @@ export function AuthProvider({ children }) {
       school,
       loading,
       signIn,
+      signUp,
       signOut,
       refresh,
     }),
-    [session, profile, school, loading, signIn, signOut, refresh],
+    [session, profile, school, loading, signIn, signUp, signOut, refresh],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

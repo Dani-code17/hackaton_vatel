@@ -7,7 +7,7 @@ import { Alert, Badge, Button, Card, Empty, Field, Input, SectionTitle, Select, 
 
 export default function SuiviPage() {
   const { t } = useLanguage()
-  const { user, refresh } = useAuth()
+  const { user, refresh, school } = useAuth()
   const [children, setChildren] = useState([])
   const [reservations, setReservations] = useState([])
   const [loading, setLoading] = useState(true)
@@ -86,6 +86,8 @@ export default function SuiviPage() {
   }
 
   const today = todayISO()
+  // Seuil d'alerte = moins de deux repas au tarif de l'établissement
+  const lowBalanceThreshold = (school?.meal_price ?? 0) * 2
 
   return (
     <div className="space-y-5">
@@ -122,9 +124,11 @@ export default function SuiviPage() {
               </div>
             ) : null}
 
-            {child.balance < 50 ? (
-              <Alert tone="amber" title="Solde bas">
-                Rechargez pour éviter que votre enfant soit bloqué au comptoir.
+            {lowBalanceThreshold > 0 && child.balance < lowBalanceThreshold ? (
+              <Alert tone="amber" title={t('menu.lowBalance')}>
+                {t('parent.lowBalanceHint', {
+                  amount: fcfa(Math.max(0, lowBalanceThreshold - child.balance)),
+                })}
               </Alert>
             ) : null}
           </Card>

@@ -12,13 +12,14 @@ export function Icon({ name, className = '', filled = false }) {
   )
 }
 
-export function Card({ className = '', children }) {
+export function Card({ className = '', children, ...props }) {
   return (
     <div
       className={cx(
-        'rounded-2xl border border-slate-200 bg-white shadow-[0_2px_8px_rgba(7,42,93,0.04)]',
+        'rounded-3xl bg-white shadow-[0_2px_12px_rgba(7,42,93,0.06)]',
         className,
       )}
+      {...props}
     >
       {children}
     </div>
@@ -27,9 +28,9 @@ export function Card({ className = '', children }) {
 
 const BUTTON_VARIANTS = {
   primary:
-    'bg-coral-500 text-on-accent shadow-[0_6px_18px_rgba(255,103,91,0.28)] hover:bg-coral-600 active:scale-[0.98]',
-  navy: 'bg-brand-900 text-white shadow-[0_6px_18px_rgba(7,42,93,0.22)] hover:bg-brand-700 active:scale-[0.98]',
-  secondary: 'border-[1.5px] border-brand-900 bg-white text-brand-900 hover:bg-brand-50',
+    'bg-coral-500 text-on-accent shadow-[0_8px_20px_rgba(255,89,89,0.24)] hover:bg-coral-600 active:scale-[0.97]',
+  navy: 'bg-brand-900 text-white shadow-[0_8px_20px_rgba(7,42,93,0.2)] hover:bg-brand-700 active:scale-[0.97]',
+  secondary: 'bg-brand-100 text-brand-900 hover:bg-brand-200 active:scale-[0.97]',
   ghost: 'text-slate-500 hover:bg-slate-100',
   danger: 'bg-coral-700 text-white hover:bg-coral-700',
 }
@@ -47,7 +48,7 @@ export function Button({
       type={type}
       disabled={disabled}
       className={cx(
-        'inline-flex h-12 items-center justify-center gap-2 rounded-lg px-4 font-display text-[13px] font-semibold transition',
+        'inline-flex h-14 items-center justify-center gap-2 rounded-2xl px-5 font-display text-[14px] font-bold transition',
         'disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none',
         BUTTON_VARIANTS[variant],
         className,

@@ -121,21 +121,14 @@ export default function ComptePage() {
 
       {message ? <Alert tone={message.tone}>{message.text}</Alert> : null}
 
-      <Card className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="font-display text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500">
-              {t('menu.balance')}
-            </p>
-            <p className="mt-1 font-display text-3xl font-bold tabular-nums text-brand-900">
-              {fcfa(profile?.balance)}
-            </p>
-            <p className="mt-0.5 text-[11px] text-slate-400">{profile?.full_name}</p>
-          </div>
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-50 text-brand-900 ring-1 ring-brand-200">
-            <Icon name="account_balance_wallet" className="text-[20px]" />
-          </span>
-        </div>
+      <div className="overflow-hidden rounded-3xl bg-brand-900 p-5 text-white shadow-[0_16px_36px_rgba(7,42,93,0.28)]">
+        <p className="font-display text-[10px] font-bold uppercase tracking-[0.14em] text-brand-200">
+          {t('menu.balance')}
+        </p>
+        <p className="mt-1 font-display text-4xl font-bold tabular-nums leading-none">
+          {fcfa(profile?.balance)}
+        </p>
+        <p className="mt-1.5 text-[11px] text-brand-200">{profile?.full_name}</p>
 
         {profile?.allergies?.length ? (
           <div className="mt-3 flex flex-wrap gap-1">
@@ -146,9 +139,24 @@ export default function ComptePage() {
             ))}
           </div>
         ) : null}
-      </Card>
 
-      <Card className="p-4">
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <a
+            href="#recharge"
+            className="flex h-11 items-center justify-center gap-1.5 rounded-xl bg-coral-500 px-2 font-display text-[11.5px] font-bold text-on-accent transition active:scale-[0.97]"
+          >
+            <Icon name="add_card" className="text-[17px]" /> {t('compte.topUpShort')}
+          </a>
+          <a
+            href="#historique"
+            className="flex h-11 items-center justify-center gap-1.5 rounded-xl bg-white/12 px-2 font-display text-[11.5px] font-bold text-white ring-1 ring-white/20 transition active:scale-[0.97]"
+          >
+            <Icon name="receipt_long" className="text-[17px]" /> {t('compte.historyShort')}
+          </a>
+        </div>
+      </div>
+
+      <Card id="recharge" className="p-4">
         <SectionTitle>{t('compte.topUp')}</SectionTitle>
         <form onSubmit={recharge} className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
@@ -246,7 +254,7 @@ export default function ComptePage() {
         </form>
       </Card>
 
-      <section>
+      <section id="historique">
         <SectionTitle>{t('compte.history')}</SectionTitle>
         {loading ? (
           <Spinner />

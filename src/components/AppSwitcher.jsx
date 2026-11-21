@@ -7,15 +7,6 @@ import { cx } from '../lib/format'
 import { UNIVERSE_ORDER, UNIVERSES } from '../lib/universes'
 import { useLanguage } from '../i18n/language'
 
-function NineDots() {
-  return (
-    <span className="grid grid-cols-3 gap-[3px]" aria-hidden="true">
-      {Array.from({ length: 9 }).map((_, index) => (
-        <span key={index} className="h-1 w-1 rounded-full bg-current" />
-      ))}
-    </span>
-  )
-}
 
 function UniverseCard({ universe, active, disabled, onSelect, t }) {
   return (
@@ -131,9 +122,10 @@ export default function AppSwitcher() {
         onClick={() => setOpen(true)}
         aria-label={t('universe.switcher')}
         title={t('universe.switcher')}
-        className="grid h-9 w-9 place-items-center rounded-xl bg-white/10 text-white ring-1 ring-white/20 transition hover:bg-white/20"
+        className="flex h-5 items-center gap-1 rounded-full bg-white/15 px-2 font-display text-[8.5px] font-bold uppercase tracking-[0.06em] text-white ring-1 ring-white/25 transition active:scale-[0.97]"
       >
-        <NineDots />
+        <span className="max-w-[92px] truncate">{UNIVERSES[current].shortName}</span>
+        <span className="material-symbols-outlined text-[12px] opacity-80">expand_more</span>
       </button>
 
       {open

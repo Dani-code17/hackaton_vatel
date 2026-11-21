@@ -1,3 +1,4 @@
+import { supabase } from '../lib/supabase'
 import {
   allergyConflicts,
   forecastHeadcount,
@@ -8,8 +9,17 @@ const ENDPOINT = 'https://api.deepseek.com/chat/completions'
 const MODEL = 'deepseek-chat'
 const TIMEOUT_MS = 12000
 
+/**
+ * Appel privilégié : proxy Edge Function (`supabase/functions/deepseek`), où la
+ * clé vit dans les secrets Supabase et n'est jamais exposée au navigateur.
+ * Repli de développement : appel direct si `VITE_DEEPSEEK_API_KEY` est défini
+ * (utile en local uniquement — ne pas définir cette variable en production).
+ */
 export const deepseekKey = import.meta.env.VITE_DEEPSEEK_API_KEY ?? ''
-export const isDeepSeekEnabled = () => Boolean(deepseekKey)
+export const isDeepSeekEnabled = () => true
+
+// Passe à false dès que le proxy répond qu'il n'est pas configuré.
+let proxyAvailable = true
 
 /** Extrait un objet JSON même si le modèle l'entoure de texte ou de balises. */
 function parseJsonObject(raw) {
@@ -24,7 +34,18 @@ function parseJsonObject(raw) {
   }
 }
 
-async function askDeepSeek({ system, user }) {
+async function askProxy({ system, user }) {
+  const { data, error } = await supabase.functions.invoke('deepseek', {
+    body: { system, user, temperature: 0.2, maxTokens: 400 },
+  })
+  if (error) throw error
+  if (!data?.content) throw new Error('Réponse du proxy illisible')
+  const parsed = parseJsonObject(data.content)
+  if (!parsed) throw new Error('Réponse DeepSeek illisible')
+  return parsed
+}
+
+async function askDirect({ system, user }) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
 
@@ -57,6 +78,20 @@ async function askDeepSeek({ system, user }) {
     return parsed
   } finally {
     clearTimeout(timer)
+  }
+}
+
+async function askDeepSeek({ system, user }) {
+  // En local, la clé de développement est disponible : appel direct (aucun secret exposé)
+  if (deepseekKey) return askDirect({ system, user })
+
+  if (!proxyAvailable) throw new Error('Assistant IA indisponible')
+
+  try {
+    return await askProxy({ system, user })
+  } catch {
+    proxyAvailable = false
+    throw new Error('Assistant IA indisponible')
   }
 }
 

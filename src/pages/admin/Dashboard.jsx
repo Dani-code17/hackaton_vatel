@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { fcfa, formatDay, todayISO } from '../../lib/format'
@@ -6,7 +7,17 @@ import { daysGained, modelConfig } from '../../lib/models'
 import { useLanguage } from '../../i18n/language'
 import CoverageGauge from '../../components/CoverageGauge'
 import StockPredictionCard from '../../components/StockPredictionCard'
-import { Alert, Badge, Card, SectionTitle, Spinner, Stat } from '../../components/ui'
+import { Alert, Badge, Card, Icon, SectionTitle, Spinner, Stat } from '../../components/ui'
+
+const SHORTCUTS = [
+  { to: '/admin/menus', key: 'modules.menus', icon: 'restaurant_menu' },
+  { to: '/admin/commandes', key: 'modules.orders', icon: 'receipt_long' },
+  { to: '/admin/stock', key: 'modules.stock', icon: 'inventory_2' },
+  { to: '/admin/comptabilite', key: 'modules.accounting', icon: 'account_balance' },
+  { to: '/admin/hygiene', key: 'modules.hygiene', icon: 'clean_hands' },
+  { to: '/admin/materiel', key: 'modules.equipment', icon: 'soup_kitchen' },
+  { to: '/admin/ecole', key: 'modules.school', icon: 'school' },
+]
 
 export default function DashboardPage() {
   const { profile } = useAuth()
@@ -20,13 +31,15 @@ export default function DashboardPage() {
     localKg: 0,
     history: [],
     supplies: [],
+    avgRating: 0,
+    ratingsCount: 0,
     loading: true,
   })
 
   const today = todayISO()
 
   const load = useCallback(async () => {
-    const [schoolResult, reservationsResult, accountingResult, stockResult, hygieneResult, receptionsResult, historyResult] =
+    const [schoolResult, reservationsResult, accountingResult, stockResult, hygieneResult, receptionsResult, historyResult, ratingsResult] =
       await Promise.all([
         supabase.from('schools').select('*').eq('id', profile.school_id).maybeSingle(),
         supabase
@@ -50,6 +63,7 @@ export default function DashboardPage() {
           .select('service_date, served_count')
           .order('service_date', { ascending: false })
           .limit(10),
+        supabase.from('meal_ratings').select('stars').limit(200),
       ])
 
     const localKg = (receptionsResult.data ?? []).reduce((total, row) => {
@@ -70,6 +84,12 @@ export default function DashboardPage() {
         served: Number(row.served_count ?? 0),
       })),
       supplies: stockResult.data ?? [],
+      avgRating: (() => {
+        const stars = (ratingsResult.data ?? []).map((row) => Number(row.stars)).filter(Boolean)
+        if (stars.length === 0) return 0
+        return Math.round((stars.reduce((sum, value) => sum + value, 0) / stars.length) * 10) / 10
+      })(),
+      ratingsCount: (ratingsResult.data ?? []).length,
       loading: false,
     })
   }, [profile.school_id, today])
@@ -93,7 +113,6 @@ export default function DashboardPage() {
   const school = state.school
   const config = modelConfig(school?.model)
   const served = state.reservations.filter((r) => r.status === 'servie').length
-  const booked = state.reservations.filter((r) => r.status === 'reservee').length
   const accounting = state.accounting
 
   const gained = daysGained({ localKg: state.localKg, enrolled: school?.enrolled_count ?? 0 })
@@ -130,19 +149,6 @@ export default function DashboardPage() {
     { label: t(config.finance.fund), value: fcfa(accounting?.local_fund), strong: true },
   ].filter(Boolean)
 
-  const secondMoney = config.finance.versements
-    ? {
-        label: t('accounting.versements', { pct: school?.versements_pct ?? 0 }),
-        value: fcfa(accounting?.versements),
-        hint: t('accounting.stateShare'),
-      }
-    : config.finance.employer
-      ? {
-          label: t('accounting.employer', { pct: school?.employer_subsidy_pct ?? 0 }),
-          value: fcfa(accounting?.employer_share),
-          hint: t('accounting.subsidised', { pct: school?.employer_subsidy_pct ?? 0 }),
-        }
-      : { label: t('dashboard.margin'), value: fcfa(accounting?.local_fund) }
   return (
     <div className="space-y-5">
       <div className="relative overflow-hidden rounded-2xl bg-brand-900 p-4 text-white shadow-[0_16px_36px_rgba(7,42,93,0.28)]">
@@ -188,9 +194,37 @@ export default function DashboardPage() {
           value={served || accounting?.served_count || 0}
           tone="teal"
         />
-        <Stat label={t('dashboard.waiting')} value={booked} hint={t('dashboard.waitingHint')} />
         <Stat label={t('dashboard.heroTitle')} value={fcfa(accounting?.revenue)} tone="teal" />
-        <Stat label={secondMoney.label} value={secondMoney.value} hint={secondMoney.hint} />
+        <Stat
+          label={t('dashboard.lowStockKpi')}
+          value={state.lowStock.length}
+          tone={state.lowStock.length > 0 ? 'rose' : 'slate'}
+        />
+        <Stat
+          label={t('dashboard.avgRating')}
+          value={state.avgRating ? `${state.avgRating} ★` : '—'}
+          hint={t('dashboard.ratingsCount', { count: state.ratingsCount })}
+        />
+      </div>
+
+      <div>
+        <SectionTitle>{t('dashboard.modules')}</SectionTitle>
+        <div className="grid grid-cols-4 gap-2">
+          {SHORTCUTS.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              className="flex flex-col items-center gap-1.5 rounded-2xl bg-white py-3 shadow-[0_2px_12px_rgba(7,42,93,0.06)] transition active:scale-[0.97]"
+            >
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-brand-50 text-brand-900">
+                <Icon name={item.icon} className="text-[20px]" />
+              </span>
+              <span className="px-1 text-center font-display text-[9.5px] font-semibold leading-tight text-slate-600">
+                {t(item.key)}
+              </span>
+            </Link>
+          ))}
+        </div>
       </div>
 
       <StockPredictionCard

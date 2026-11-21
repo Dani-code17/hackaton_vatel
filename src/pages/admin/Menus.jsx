@@ -21,6 +21,7 @@ export default function MenusPage() {
   const [meals, setMeals] = useState([])
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState(emptyForm)
+  const [editingId, setEditingId] = useState(null)
   const [message, setMessage] = useState(null)
   const [busy, setBusy] = useState(false)
 
@@ -57,25 +58,59 @@ export default function MenusPage() {
         .map((item) => item.trim().toLowerCase())
         .filter(Boolean)
 
-      const { error } = await supabase.from('meals').insert({
-        school_id: profile.school_id,
-        service_date: form.service_date,
-        name: form.name.trim(),
-        description: form.description.trim() || null,
-        price: Number(form.price),
-        capacity: Number(form.capacity),
-        vegetarian: form.vegetarian,
-        allergens,
-      })
+      const { error } = editingId
+        ? await supabase
+            .from('meals')
+            .update({
+              service_date: form.service_date,
+              name: form.name.trim(),
+              description: form.description.trim() || null,
+              price: Number(form.price),
+              capacity: Number(form.capacity),
+              vegetarian: form.vegetarian,
+              allergens,
+            })
+            .eq('id', editingId)
+        : await supabase.from('meals').insert({
+            school_id: profile.school_id,
+            service_date: form.service_date,
+            name: form.name.trim(),
+            description: form.description.trim() || null,
+            price: Number(form.price),
+            capacity: Number(form.capacity),
+            vegetarian: form.vegetarian,
+            allergens,
+          })
       if (error) throw error
       setForm({ ...emptyForm, service_date: form.service_date })
+      setEditingId(null)
       await load()
-      setMessage({ tone: 'teal', text: 'Plat ajouté au menu.' })
+      setMessage({ tone: 'teal', text: t(editingId ? 'menus.updated' : 'menus.created') })
     } catch (error) {
       setMessage({ tone: 'rose', text: error.message })
     } finally {
       setBusy(false)
     }
+  }
+
+  const startEdit = (meal) => {
+    setEditingId(meal.id)
+    setMessage(null)
+    setForm({
+      service_date: meal.service_date,
+      name: meal.name,
+      description: meal.description ?? '',
+      price: meal.price,
+      capacity: meal.capacity,
+      vegetarian: Boolean(meal.vegetarian),
+      allergens: (meal.allergens ?? []).join(', '),
+    })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+    setForm({ ...emptyForm, service_date: form.service_date })
   }
 
   const remove = async (meal) => {
@@ -100,7 +135,7 @@ export default function MenusPage() {
       <div className="grid gap-4">
         {canWrite ? (
           <Card>
-            <SectionTitle>{t('menus.add')}</SectionTitle>
+            <SectionTitle>{t(editingId ? 'menus.edit' : 'menus.add')}</SectionTitle>
             <form onSubmit={submit} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <Field label={t('menus.serviceDate')}>
@@ -168,8 +203,17 @@ export default function MenusPage() {
               </label>
 
               <Button type="submit" className="w-full" disabled={busy}>
-                {busy ? 'Enregistrement…' : 'Publier le plat'}
+                {busy
+                  ? t('common.loading')
+                  : editingId
+                    ? t('menus.saveEdit')
+                    : t('menus.publish')}
               </Button>
+              {editingId ? (
+                <Button variant="ghost" className="w-full" onClick={cancelEdit}>
+                  {t('common.cancel')}
+                </Button>
+              ) : null}
             </form>
           </Card>
         ) : null}
@@ -200,13 +244,22 @@ export default function MenusPage() {
                     ) : null}
                   </div>
                   {canWrite ? (
-                    <button
-                      type="button"
-                      onClick={() => remove(meal)}
-                      className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-coral-700 hover:bg-coral-100"
-                    >
-                      Supprimer
-                    </button>
+                    <div className="flex shrink-0 flex-col gap-1">
+                      <button
+                        type="button"
+                        onClick={() => startEdit(meal)}
+                        className="rounded-lg bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-900 hover:bg-brand-100"
+                      >
+                        {t('menus.editAction')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => remove(meal)}
+                        className="rounded-lg px-2 py-1 text-xs font-semibold text-coral-700 hover:bg-coral-100"
+                      >
+                        {t('menus.deleteAction')}
+                      </button>
+                    </div>
                   ) : null}
                 </li>
               ))}

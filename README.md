@@ -52,18 +52,19 @@ Le terrain impose deux profils supplémentaires, implémentés dans la même app
 **MVP — fonctionnel**
 
 - [x] Connexion sécurisée (Supabase Auth) avec redirection par rôle
+- [x] **Inscription en libre-service** (élève ou parent) via l'Edge Function `signup`
 - [x] Consultation du menu de la semaine
 - [x] Réservation d'un repas avec débit automatisé du solde
 - [x] Affichage du solde et de l'historique des mouvements
-- [x] Création / suppression des menus (gérant)
+- [x] Création, **modification** (prix, allergènes, capacité, date) et suppression des menus (gérant)
 - [x] Visualisation des commandes du jour en temps réel
 - [x] Tableau de bord avec statistiques de base
 
 **Bonus — livrés**
 
-- [x] Paiement Mobile Money simulé (Wave / Orange Money)
+- [x] Paiement Mobile Money **simulé** (Wave / Orange Money) — aucun flux réel
 - [x] Pass QR code à valider au comptoir, avec alerte allergies
-- [x] Notifications temps réel (flux Supabase Realtime)
+- [x] Notifications **en temps réel dans l'application** (flux Supabase Realtime, pas de push)
 - [x] Notation des plats
 - [x] Mise en cache locale du menu (mode faible connexion)
 
@@ -161,9 +162,13 @@ modèle `deepseek-chat`) via `src/services/deepseekAI.js` :
 | **Vatel Smart Chef IA** | Carte du jour (élève / salarié) | Reçoit le profil d'allergies, le solde, les plats disponibles et la langue active ; renvoie le plat le plus sûr avec un score de compatibilité et une justification courte. Bouton « Actualiser le conseil IA ». |
 | **Prédiction IA Anti-Gaspillage** | Tableau de bord du gérant | Analyse l'historique des repas servis et les stocks pour estimer les rations du lendemain et lister les risques de rupture (riz, sardines, huile). |
 
-- La clé est lue depuis `VITE_DEEPSEEK_API_KEY` (voir `.env.example`) : **aucune clé n'est écrite
-  dans le code**, et `.env` est exclu de Git.
-- **Repli silencieux** : sans clé ou en cas d'échec réseau / CORS, un moteur local
+- La clé **n'est jamais committée** et **n'est pas incluse dans le bundle** : en production, le
+  navigateur appelle la fonction Edge `deepseek` (`supabase/functions/deepseek`), qui détient le
+  secret côté serveur. En local uniquement, `VITE_DEEPSEEK_API_KEY` permet un appel direct.
+  > ⚠️ Toute variable `VITE_*` est compilée dans le bundle JS : **ne pas définir
+  > `VITE_DEEPSEEK_API_KEY` sur Vercel**, sinon la clé devient publique.
+  > Activation du proxy : `supabase secrets set DEEPSEEK_API_KEY=sk-... --project-ref <ref>`
+- **Repli silencieux** : sans secret, en cas d'échec réseau ou de quota, un moteur local
   (`localMealAdvice`, `localRationForecast`) prend le relais sans message d'erreur. La démo
   fonctionne donc hors ligne, et la carte indique simplement la source (`DeepSeek` ou
   `Moteur local`).
@@ -401,14 +406,38 @@ continue de consulter les plats et voit un bandeau « Hors ligne ».
 1. Importer le dépôt GitHub dans Vercel.
 2. Framework preset : **Vite** — Build : `npm run build` — Output : `dist`.
 3. Ajouter `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` dans les variables d'environnement du projet.
+   **Ne pas** ajouter `VITE_DEEPSEEK_API_KEY` : la clé resterait côté serveur via l'Edge Function.
 4. Déployer : chaque `git push` redéploie automatiquement.
+
+### Fonctions Edge (Supabase)
+
+| Fonction | Rôle | Déploiement |
+| --- | --- | --- |
+| `signup` | Inscription confirmée immédiatement, `service_role` côté serveur | `supabase functions deploy signup --no-verify-jwt` |
+| `deepseek` | Proxy de l'API DeepSeek, clé dans les secrets | `supabase functions deploy deepseek` puis `supabase secrets set DEEPSEEK_API_KEY=sk-...` |
+
+### Sécurité des données
+
+- **Solde, rôle, établissement et rattachement parent** ne sont plus modifiables par un
+  `PATCH` direct : un trigger `guard_profile_sensitive_columns` refuse l'écriture côté client
+  (`current_user = 'authenticated'`) et n'autorise que les fonctions `security definer`
+  (`recharge_wallet`, `reserve_meal`, `cancel_reservation`, `switch_active_school`).
+  Vérifié avec un jeton élève : `PATCH /profiles {balance}` → **403**.
+- L'inscription publique ne peut créer que des comptes **élève** ou **parent** : le rôle
+  `gerant` / `directeur` / `conseiller_dcs` est ignoré côté serveur pour éviter toute élévation
+  de privilèges.
+- RLS activée sur toutes les tables métier, avec des helpers `security definer`
+  (`my_role()`, `my_school()`, `is_staff()`).
 
 ---
 
 ## 🔑 Comptes de test pour le jury
-
 Cinq profils sont préchargés. Mot de passe identique pour tous : **`Demo1234!`**
-(un bouton sur l'écran de connexion remplit automatiquement les identifiants).
+(trois chips sur l'écran de connexion remplissent automatiquement les identifiants).
+
+**Inscription libre-service** : l'onglet « Inscription » de l'écran de connexion crée un compte
+élève ou parent (Edge Function `signup` → compte confirmé immédiatement, profil créé par le
+trigger `handle_new_user`). Un parent peut rattacher un compte élève existant via l'e-mail.
 
 | Profil | Email | Ce qu'il faut tester |
 | --- | --- | --- |
