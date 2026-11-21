@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { fcfa, formatDay, todayISO } from '../../lib/format'
+import { accentOf, daysGained, modelConfig } from '../../lib/models'
+import CoverageGauge from '../../components/CoverageGauge'
 import { Alert, Badge, Card, SectionTitle, Spinner, Stat } from '../../components/ui'
 
 export default function DashboardPage() {
@@ -12,24 +14,21 @@ export default function DashboardPage() {
     accounting: null,
     lowStock: [],
     hygiene: null,
+    localKg: 0,
     loading: true,
   })
 
   const today = todayISO()
 
   const load = useCallback(async () => {
-    const [schoolResult, reservationsResult, accountingResult, stockResult, hygieneResult] =
+    const [schoolResult, reservationsResult, accountingResult, stockResult, hygieneResult, receptionsResult] =
       await Promise.all([
         supabase.from('schools').select('*').eq('id', profile.school_id).maybeSingle(),
         supabase
           .from('reservations')
           .select('id, status, meal:meals!inner(name, service_date, price)')
           .eq('meal.service_date', today),
-        supabase
-          .from('daily_accounting')
-          .select('*')
-          .eq('service_date', today)
-          .maybeSingle(),
+        supabase.from('daily_accounting').select('*').eq('service_date', today).maybeSingle(),
         supabase.from('supplies').select('name, stock, unit, min_stock').order('name'),
         supabase
           .from('hygiene_checks')
@@ -37,7 +36,17 @@ export default function DashboardPage() {
           .order('checked_at', { ascending: false })
           .limit(1)
           .maybeSingle(),
+        supabase
+          .from('supply_receptions')
+          .select('quantity, weight_kg, source, supply:supplies(unit)')
+          .eq('source', 'achats_locaux'),
       ])
+
+    const localKg = (receptionsResult.data ?? []).reduce((total, row) => {
+      const weight = Number(row.weight_kg ?? 0)
+      if (weight > 0) return total + weight
+      return row.supply?.unit === 'kg' ? total + Number(row.quantity) : total
+    }, 0)
 
     setState({
       school: schoolResult.data,
@@ -45,6 +54,7 @@ export default function DashboardPage() {
       accounting: accountingResult.data,
       lowStock: (stockResult.data ?? []).filter((item) => Number(item.stock) <= Number(item.min_stock)),
       hygiene: hygieneResult.data,
+      localKg,
       loading: false,
     })
   }, [profile.school_id, today])
@@ -65,66 +75,96 @@ export default function DashboardPage() {
 
   if (state.loading) return <Spinner />
 
+  const school = state.school
+  const config = modelConfig(school?.model)
+  const accent = accentOf(school?.model)
   const served = state.reservations.filter((r) => r.status === 'servie').length
   const booked = state.reservations.filter((r) => r.status === 'reservee').length
   const accounting = state.accounting
 
+  const gained = daysGained({ localKg: state.localKg, enrolled: school?.enrolled_count ?? 0 })
+  const covered = school?.cover_days_current ?? 0
+  const projected = Math.min(school?.cover_days_target ?? 120, covered + gained)
+
+  const financeRows = [
+    { label: config.finance.revenue, value: fcfa(accounting?.revenue), strong: true },
+    config.finance.versements
+      ? { label: config.finance.versements, value: fcfa(accounting?.versements) }
+      : null,
+    config.finance.salary
+      ? { label: config.finance.salary, value: fcfa(accounting?.cantiniere_salary) }
+      : null,
+    config.finance.employer
+      ? { label: config.finance.employer, value: fcfa(accounting?.employer_share) }
+      : null,
+    config.finance.payer
+      ? { label: config.finance.payer, value: fcfa(accounting?.payer_share) }
+      : null,
+    { label: config.finance.fund, value: fcfa(accounting?.local_fund), strong: true },
+  ].filter(Boolean)
+
+  const secondMoney = config.finance.versements
+    ? { label: 'Versements (40 %)', value: fcfa(accounting?.versements), hint: 'part État' }
+    : config.finance.employer
+      ? {
+          label: 'Part employeur',
+          value: fcfa(accounting?.employer_share),
+          hint: school?.employer_subsidy_pct + ' % subventionnés',
+        }
+      : { label: 'Marge du jour', value: fcfa(accounting?.local_fund) }
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">{state.school?.name ?? 'Établissement'}</h2>
+          <h2 className="text-lg font-bold text-slate-900">{school?.name ?? 'Établissement'}</h2>
           <p className="text-xs text-slate-500">
-            {formatDay(today)} · {state.school?.enrolled_count ?? 0} élèves inscrits
+            {formatDay(today)} · {school?.enrolled_count ?? 0}{' '}
+            {school?.model === 'entreprise' ? 'salariés' : 'élèves'} · {config.priceNote}
           </p>
         </div>
-        <Badge tone="teal">● Temps réel</Badge>
+        <div className="flex items-center gap-2">
+          <span className={'rounded-full px-2 py-0.5 text-[11px] font-semibold ' + accent.badge}>
+            {config.label}
+          </span>
+          <Badge tone="teal">● Temps réel</Badge>
+        </div>
       </div>
 
       {state.lowStock.length > 0 ? (
-        <Alert tone="amber" title={`${state.lowStock.length} article(s) sous le seuil`}>
-          {state.lowStock.map((item) => `${item.name} (${item.stock} ${item.unit})`).join(' · ')}
+        <Alert tone="amber" title={state.lowStock.length + ' article(s) sous le seuil'}>
+          {state.lowStock.map((item) => item.name + ' (' + item.stock + ' ' + item.unit + ')').join(' · ')}
         </Alert>
       ) : null}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Repas servis" value={served || accounting?.served_count || 0} tone="teal" />
         <Stat label="En attente" value={booked} hint="réservés non pointés" />
-        <Stat label="Recette du jour" value={fcfa(accounting?.revenue)} tone="teal" />
-        <Stat
-          label="Versements (40 %)"
-          value={fcfa(accounting?.versements)}
-          hint="part État"
-        />
+        <Stat label="Chiffre du jour" value={fcfa(accounting?.revenue)} tone="teal" />
+        <Stat label={secondMoney.label} value={secondMoney.value} hint={secondMoney.hint} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <SectionTitle>Journal comptable du jour</SectionTitle>
+          <SectionTitle>Journal du jour — {config.short}</SectionTitle>
           <dl className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <dt className="text-slate-500">Rationnaires servis</dt>
-              <dd className="font-semibold">{accounting?.served_count ?? 0}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-slate-500">Recette (25 F / repas)</dt>
-              <dd className="font-semibold">{fcfa(accounting?.revenue)}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-slate-500">État des versements (40 %)</dt>
-              <dd className="font-semibold">{fcfa(accounting?.versements)}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-slate-500">Salaire cantinière (5 F / plat)</dt>
-              <dd className="font-semibold">{fcfa(accounting?.cantiniere_salary)}</dd>
-            </div>
-            <div className="flex justify-between border-t border-slate-100 pt-2">
-              <dt className="font-medium text-slate-700">Fonds de fonctionnement</dt>
-              <dd className="font-bold text-teal-700">{fcfa(accounting?.local_fund)}</dd>
-            </div>
+            {financeRows.map((row) => (
+              <div
+                key={row.label}
+                className={
+                  'flex justify-between ' + (row.strong ? 'border-t border-slate-100 pt-2' : '')
+                }
+              >
+                <dt className={row.strong ? 'font-medium text-slate-700' : 'text-slate-500'}>
+                  {row.label}
+                </dt>
+                <dd className={row.strong ? 'font-bold text-brand-900' : 'font-semibold'}>
+                  {row.value}
+                </dd>
+              </div>
+            ))}
           </dl>
           {accounting?.signed_at ? (
-            <p className="mt-3 text-xs text-teal-700">
+            <p className="mt-3 text-xs text-brand-900">
               ✓ Signé le {new Date(accounting.signed_at).toLocaleDateString('fr-FR')}
             </p>
           ) : (
@@ -132,25 +172,69 @@ export default function DashboardPage() {
           )}
         </Card>
 
+        {config.showPamImpact ? (
+          <Card>
+            <SectionTitle>Impact PAM — couverture de l'année scolaire</SectionTitle>
+            <CoverageGauge
+              current={covered}
+              projected={projected}
+              target={school?.cover_days_target ?? 120}
+              accent="teal"
+              note={
+                gained > 0
+                  ? '+' + gained + ' jours grâce aux achats locaux (' + Math.round(state.localKg) + ' kg)'
+                  : 'Aucun achat local enregistré sur cet établissement'
+              }
+            />
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className="rounded-lg bg-slate-50 p-2">
+                <p className="text-[10px] uppercase text-slate-500">Achats locaux</p>
+                <p className="text-sm font-bold text-slate-800">
+                  {(state.localKg / 1000).toFixed(1)} t
+                </p>
+              </div>
+              <div className="rounded-lg bg-slate-50 p-2">
+                <p className="text-[10px] uppercase text-slate-500">Rationnaires</p>
+                <p className="text-sm font-bold text-slate-800">{school?.enrolled_count ?? 0}</p>
+              </div>
+            </div>
+          </Card>
+        ) : (
+          <Card>
+            <SectionTitle>Dernier contrôle hygiène</SectionTitle>
+            {state.hygiene ? (
+              <div className="space-y-2">
+                <p className="text-3xl font-bold text-slate-900">{state.hygiene.score}/100</p>
+                <p className="text-xs text-slate-500">
+                  {new Date(state.hygiene.checked_at).toLocaleString('fr-FR')}
+                </p>
+                {state.hygiene.note ? (
+                  <p className="rounded-lg bg-slate-50 p-2 text-xs text-slate-600">
+                    {state.hygiene.note}
+                  </p>
+                ) : null}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500">Aucun contrôle enregistré.</p>
+            )}
+          </Card>
+        )}
+      </div>
+
+      {config.showPamImpact && state.hygiene ? (
         <Card>
           <SectionTitle>Dernier contrôle hygiène</SectionTitle>
-          {state.hygiene ? (
-            <div className="space-y-2">
-              <p className="text-3xl font-bold text-slate-900">{state.hygiene.score}/100</p>
-              <p className="text-xs text-slate-500">
-                {new Date(state.hygiene.checked_at).toLocaleString('fr-FR')}
-              </p>
-              {state.hygiene.note ? (
-                <p className="rounded-lg bg-slate-50 p-2 text-xs text-slate-600">
-                  {state.hygiene.note}
-                </p>
-              ) : null}
-            </div>
-          ) : (
-            <p className="text-sm text-slate-500">Aucun contrôle enregistré.</p>
-          )}
+          <div className="flex items-center justify-between">
+            <p className="text-2xl font-bold text-slate-900">{state.hygiene.score}/100</p>
+            <p className="text-xs text-slate-500">
+              {new Date(state.hygiene.checked_at).toLocaleString('fr-FR')}
+            </p>
+          </div>
+          {state.hygiene.note ? (
+            <p className="mt-1 text-xs text-slate-600">{state.hygiene.note}</p>
+          ) : null}
         </Card>
-      </div>
+      ) : null}
 
       <Card>
         <SectionTitle>Réservations du jour</SectionTitle>

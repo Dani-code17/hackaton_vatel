@@ -30,6 +30,7 @@ export default function MenusPage() {
     const { data, error } = await supabase
       .from('meals')
       .select('*, reservations(count)')
+      .eq('school_id', profile.school_id)
       .gte('service_date', today)
       .lte('service_date', addDays(today, 13))
       .order('service_date')
@@ -38,7 +39,7 @@ export default function MenusPage() {
     if (error) setMessage({ tone: 'rose', text: error.message })
     setMeals(data ?? [])
     setLoading(false)
-  }, [today])
+  }, [profile.school_id, today])
 
   useEffect(() => {
     load()
@@ -200,7 +201,7 @@ export default function MenusPage() {
                     <button
                       type="button"
                       onClick={() => remove(meal)}
-                      className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+                      className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-coral-700 hover:bg-coral-100"
                     >
                       Supprimer
                     </button>

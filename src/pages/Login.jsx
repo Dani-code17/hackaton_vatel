@@ -43,15 +43,20 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-dvh bg-gradient-to-b from-teal-800 via-teal-700 to-slate-100 px-4 py-10">
+    <div className="min-h-dvh bg-gradient-to-b from-brand-900 via-brand-700 to-shell px-4 py-10">
       <div className="mx-auto w-full max-w-sm">
-        <div className="mb-6 text-center text-white">
-          <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-white/15 text-2xl ring-1 ring-white/30">
-            🍽️
+        <div className="mb-6 flex flex-col items-center gap-3 text-center text-white">
+          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-coral-500 text-2xl font-extrabold text-brand-900">
+            V
           </div>
-          <h1 className="text-2xl font-bold">Cantine de Vatel</h1>
-          <p className="mt-1 text-sm text-teal-50/90">
-            Menus, réservations, solde et gestion de la cantine
+          <div>
+            <p className="text-xl font-extrabold uppercase tracking-[0.35em]">Vatel</p>
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-brand-200">
+              Cantine Campus Abidjan
+            </p>
+          </div>
+          <p className="max-w-xs text-sm text-brand-100/90">
+            Menus, réservations, pass repas et gestion de la cantine
           </p>
         </div>
 
@@ -94,7 +99,7 @@ export default function Login() {
                   key={account.email}
                   type="button"
                   onClick={() => fillDemo(account)}
-                  className="rounded-xl border border-slate-200 px-2 py-2 text-left text-xs font-semibold text-slate-700 hover:border-teal-300 hover:bg-teal-50"
+                  className="rounded-xl border border-slate-200 px-2 py-2 text-left text-xs font-semibold text-brand-900 hover:border-brand-200 hover:bg-brand-50"
                 >
                   {ROLE_LABELS[account.role]}
                   <span className="block truncate text-[10px] font-normal text-slate-400">

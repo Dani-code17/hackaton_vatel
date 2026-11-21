@@ -71,11 +71,46 @@ Le terrain impose deux profils supplémentaires, implémentés dans la même app
 
 - [x] Calculateur de rations qui décrémente le stock automatiquement
 - [x] Réception des vivres par origine (Gouvernement, Communauté, Organisation)
+- [x] Inventaire et état du matériel de cuisine
 - [x] Comptabilité journalière automatique (25 F / 40 % / 5 F)
 - [x] Signature électronique du journal et de la fiche école par le directeur
 - [x] Contrôle hygiène à distance avec photo horodatée
 - [x] Supervision multi-établissements pour le conseiller DCS
 - [x] Export CSV de la fiche d'assiduité
+- [x] **Multi-modèles d'établissement** (public DCS/PAM, privé, entreprise)
+- [x] **Indicateur d'impact PAM** (couverture 73/120 → 98/120 jours)
+- [x] Achats locaux en kg/tonnes auprès des groupements agricoles
+
+### Multi-modèles d'établissement
+
+Le cahier des charges couvre trois terrains différents, servis par la même application.
+Un sélecteur dans l'en-tête bascule d'un modèle à l'autre en un clic.
+
+| Modèle | Tarif | Calcul financier | Identité |
+| --- | --- | --- | --- |
+| **Cantine publique DCS / PAM** (EPP GBT) | 25 FCFA | Recette, versements 40 %, cantinière 5 F/plat, fonds local | Bleu marine |
+| **École privée / Supérieur** (Cantine de Vatel) | 1 500 FCFA | 100 % payé par les familles, marge de fonctionnement | Bleu ciel |
+| **Cantine d'entreprise** (Groupe ACMC) | 1 000 FCFA | Subvention employeur 50 % / part salarié 50 % | Acier |
+
+Concrètement :
+
+- Les **colonnes du journal comptable** et les **libellés** changent selon le modèle.
+- En cantine d'entreprise, le salarié n'est débité que de **sa part** (500 F pour un plat à 1 000 F).
+- Les **sources d'approvisionnement** proposées à la réception diffèrent (Gouvernement/DCS, PAM,
+  groupements de producteurs locaux, fournisseur).
+- L'indicateur **Impact PAM** n'apparaît que sur le modèle public et dans la supervision.
+
+### Indicateur d'impact PAM
+
+| Donnée | Valeur |
+| --- | --- |
+| Couverture année scolaire | **73 / 120 jours** (moyenne nationale PAM) |
+| Projection avec optimisation des stocks | **98 / 120 jours** (+25 jours gagnés) |
+| Élèves couverts | **194 797** |
+| Achats locaux | **489,6 t** |
+
+La projection est calculée à partir des **achats locaux réellement saisis** (kg) rapportés au
+besoin journalier de l'établissement, plafonnée à 25 jours comme dans le référentiel PAM.
 
 ---
 
@@ -104,7 +139,6 @@ Le terrain impose deux profils supplémentaires, implémentés dans la même app
 ```
 
 ### Choix techniques et justification
-
 | Brique | Choix | Pourquoi |
 | --- | --- | --- |
 | Frontend | **React 19 + Vite** | Démarrage instantané, HMR rapide, écosystème maîtrisé |
@@ -116,6 +150,24 @@ Le terrain impose deux profils supplémentaires, implémentés dans la même app
 > **Pourquoi pas un backend maison ?** Un serveur Express/Django aurait imposé de développer
 > l'authentification, les migrations et les endpoints avant même la première fonctionnalité
 > visible. Supabase fournit cette couche immédiatement.
+
+### Charte graphique Vatel
+
+| Rôle | Couleur | Usage |
+| --- | --- | --- |
+| Principale | `#072A5D` Bleu Marine | En-têtes, navigation, titres |
+| Secondaire | `#89C2EA` Bleu Ciel | Badges, accents graphiques, jauges |
+| Action | `#FF675B` Corail | Boutons Réserver / Valider / Recharger, alertes allergies |
+| Fond | `#F4F7FA` | Arrière-plan général |
+| Cartes | `#FFFFFF` | Contenants |
+| Typographie | Montserrat (repli Inter, system-ui) | Toute l'interface |
+
+Les jetons sont déclarés une seule fois dans `src/index.css` (`@theme`) et consommés via les
+utilitaires `brand-*`, `coral-*` et `shell`. Le logo « VATEL — Cantine Campus Abidjan »
+est défini dans `src/components/VatelLogo.jsx`.
+
+> Le corail porte un texte bleu marine : ce couple atteint un contraste de 4,9:1 (conforme
+> WCAG AA), là où du blanc sur corail plafonnerait à 2,8:1.
 
 ### Arborescence
 
@@ -130,7 +182,7 @@ hackaton_vatel/
 │   ├── pages/
 │   │   ├── eleve/             # menu, pass repas, compte
 │   │   ├── parent/            # suivi de l'enfant, historique
-│   │   ├── admin/             # cahier de gestion (6 onglets)
+│   │   ├── admin/             # cahier de gestion (8 onglets)
 │   │   └── dcs/               # supervision multi-écoles
 │   ├── App.jsx                # routes et gardes par rôle
 │   └── index.css              # import Tailwind + thème
@@ -248,6 +300,9 @@ Les migrations SQL sont versionnées dans `supabase/migrations/` et s'appliquent
 | `20261121000300_functions.sql` | Fonctions métier et trigger de profil |
 | `20261121000400_seed.sql` | École, menus, stocks et comptes de démonstration |
 | `20261121000500_parent_reservations.sql` | Correctif d'accès parent → enfant |
+| `20261121100000_multi_modeles.sql` | Configuration par établissement, indicateurs PAM, bascule |
+| `20261121100100_pointage_config.sql` | Pointage figé sur la configuration du modèle |
+| `20261121100200_multi_modeles_donnees.sql` | Trois établissements de démonstration |
 
 Application via le **SQL Editor** du dashboard Supabase ou avec la CLI :
 
@@ -290,15 +345,18 @@ Cinq profils sont préchargés. Mot de passe identique pour tous : **`Demo1234!`
 
 ### Scénario de démonstration (3 minutes)
 
-1. **Élève** — réserver le repas du jour (le solde passe de 450 F à 425 F), ouvrir le **pass QR**.
+1. **Élève** — réserver le repas du jour (1 500 F débités), ouvrir le **pass QR**.
 2. **Gérant → Commandes** — la réservation apparaît en temps réel ; cliquer **Pointer** :
    l'alerte allergie s'affiche et la recette du jour est recalculée.
-3. **Gérant → Stock & rations** — saisir 200 rationnaires : le besoin par article est calculé,
-   le stock est décrémenté, et un article sous le seuil bloque l'action.
-4. **Gérant → Comptabilité** — le journal du jour affiche 25 F de recette, 10 F de versements
-   et 5 F de salaire cantinière par repas.
-5. **Directeur** — signer électroniquement le journal et la fiche école.
-6. **Conseiller DCS** — vérifier la même école à distance : stocks, score hygiène, versements.
+3. **Gérant → sélecteur en haut à droite** — basculer sur **EPP GBT** : les libellés passent
+   en 25 F, 40 % de versements, 5 F cantinière, et l'**indicateur PAM 73/120 → 98/120** apparaît.
+4. **Gérant → Stock & rations** — saisir 200 rationnaires : le besoin par article est calculé,
+   le stock est décrémenté ; un article sous le seuil bloque l'action.
+5. **Gérant → Comptabilité** — le journal s'adapte au modèle sélectionné.
+6. **Basculer sur Cantine Entreprise** — vérifier la répartition 50 % employeur / 50 % salarié.
+7. **Directeur** — signer électroniquement le journal et la fiche école.
+8. **Conseiller DCS** — retrouver les trois établissements, les stocks, le score hygiène et
+   les statistiques d'impact PAM (194 797 élèves, 489,6 t d'achats locaux).
 
 > Le passage d'un profil à l'autre se fait avec **Quitter** en haut à droite ; la connexion
 > prend deux clics grâce aux boutons de démonstration.

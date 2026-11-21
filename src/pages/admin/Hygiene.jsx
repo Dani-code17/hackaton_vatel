@@ -133,7 +133,7 @@ export default function HygienePage() {
               <span
                 className={
                   'text-lg font-bold ' +
-                  (score >= 80 ? 'text-teal-700' : score >= 50 ? 'text-amber-600' : 'text-rose-600')
+                  (score >= 80 ? 'text-brand-900' : score >= 50 ? 'text-amber-600' : 'text-coral-700')
                 }
               >
                 {score}/100
@@ -197,7 +197,7 @@ export default function HygienePage() {
                     <button
                       type="button"
                       onClick={() => openPhoto(row)}
-                      className="mt-1 text-xs font-semibold text-teal-700 hover:underline"
+                      className="mt-1 text-xs font-semibold text-brand-900 hover:underline"
                     >
                       📷 Voir la photo horodatée
                     </button>

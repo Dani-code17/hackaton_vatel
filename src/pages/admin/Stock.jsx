@@ -2,12 +2,15 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { downloadCsv, formatDay, todayISO } from '../../lib/format'
+import { modelConfig, sourcesFor } from '../../lib/models'
 import { Alert, Badge, Button, Card, Empty, Field, Input, SectionTitle, Select, Spinner, Stat } from '../../components/ui'
 
 export default function StockPage() {
   const { profile } = useAuth()
   const [supplies, setSupplies] = useState([])
   const [movements, setMovements] = useState([])
+  const [school, setSchool] = useState(null)
+  const [localKg, setLocalKg] = useState(0)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -15,33 +18,53 @@ export default function StockPage() {
   const [reception, setReception] = useState({
     supply_id: '',
     quantity: '',
-    source: 'gouvernement',
+    source: '',
     note: '',
+    weight_kg: '',
   })
 
   const canWrite = profile?.role === 'gerant'
   const today = todayISO()
+  const sources = sourcesFor(school?.model)
+  const config = modelConfig(school?.model)
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [suppliesResult, movementsResult] = await Promise.all([
+    const [suppliesResult, movementsResult, schoolResult, receptionsResult] = await Promise.all([
       supabase.from('supplies').select('*').order('name'),
       supabase
         .from('supply_movements')
         .select('id, quantity, kind, rationnaires, service_date, created_at, supply:supplies(name, unit)')
         .order('created_at', { ascending: false })
         .limit(12),
+      supabase.from('schools').select('*').eq('id', profile.school_id).maybeSingle(),
+      supabase
+        .from('supply_receptions')
+        .select('quantity, weight_kg, source, supply:supplies(unit)')
+        .eq('source', 'achats_locaux'),
     ])
 
     if (suppliesResult.error) setMessage({ tone: 'rose', text: suppliesResult.error.message })
     setSupplies(suppliesResult.data ?? [])
     setMovements(movementsResult.data ?? [])
+    setSchool(schoolResult.data)
+    setLocalKg(
+      (receptionsResult.data ?? []).reduce((total, row) => {
+        const weight = Number(row.weight_kg ?? 0)
+        if (weight > 0) return total + weight
+        return row.supply?.unit === 'kg' ? total + Number(row.quantity) : total
+      }, 0),
+    )
     setReception((current) => ({
       ...current,
       supply_id: current.supply_id || (suppliesResult.data?.[0]?.id ?? ''),
+      source:
+        current.source ||
+        sourcesFor(schoolResult.data?.model)[0]?.value ||
+        'achats_locaux',
     }))
     setLoading(false)
-  }, [])
+  }, [profile.school_id])
 
   useEffect(() => {
     load()
@@ -99,6 +122,10 @@ export default function StockPage() {
         quantity,
         source: reception.source,
         note: reception.note.trim() || null,
+        weight_kg:
+          reception.source === 'achats_locaux'
+            ? Number(reception.weight_kg) || (supply.unit === 'kg' ? quantity : null)
+            : null,
       })
       if (receptionError) throw receptionError
 
@@ -108,7 +135,7 @@ export default function StockPage() {
         .eq('id', supply.id)
       if (stockError) throw stockError
 
-      setReception({ ...reception, quantity: '', note: '' })
+      setReception({ ...reception, quantity: '', note: '', weight_kg: '' })
       await load()
       setMessage({ tone: 'teal', text: `Réception enregistrée : +${quantity} ${supply.unit} de ${supply.name}.` })
     } catch (error) {
@@ -127,7 +154,7 @@ export default function StockPage() {
         <Alert tone="amber">Consultation seule : le gérant saisit les réceptions et les rations.</Alert>
       ) : null}
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Articles" value={supplies.length} />
         <Stat
           label="Sous le seuil"
@@ -135,6 +162,12 @@ export default function StockPage() {
           tone="amber"
         />
         <Stat label="Rationnaires" value={rationnaires} hint={formatDay(today)} />
+        <Stat
+          label="Achats locaux"
+          value={(localKg / 1000).toFixed(1) + ' t'}
+          hint={config.short}
+          tone="teal"
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -172,12 +205,33 @@ export default function StockPage() {
                   onChange={(event) => setReception({ ...reception, source: event.target.value })}
                   disabled={!canWrite}
                 >
-                  <option value="gouvernement">Gouvernement</option>
-                  <option value="communaute">Communauté</option>
-                  <option value="organisation">Organisation externe</option>
+                  {sources.map((source) => (
+                    <option key={source.value} value={source.value}>
+                      {source.label}
+                    </option>
+                  ))}
                 </Select>
               </Field>
             </div>
+
+            {reception.source === 'achats_locaux' ? (
+              <Field
+                label="Poids livré (kg)"
+                hint="utilisé pour le suivi en tonnes des groupements agricoles"
+              >
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={reception.weight_kg}
+                  onChange={(event) =>
+                    setReception({ ...reception, weight_kg: event.target.value })
+                  }
+                  placeholder="ex. 1200"
+                  disabled={!canWrite}
+                />
+              </Field>
+            ) : null}
 
             <Field label="Observation">
               <Input
@@ -216,7 +270,7 @@ export default function StockPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {preview.map((item) => (
-                  <tr key={item.id} className={item.needed > Number(item.stock) ? 'bg-rose-50' : ''}>
+                  <tr key={item.id} className={item.needed > Number(item.stock) ? 'bg-coral-100' : ''}>
                     <td className="px-2 py-1.5 font-medium text-slate-700">{item.name}</td>
                     <td className="px-2 py-1.5 text-right">
                       {item.needed} {item.unit}
@@ -229,7 +283,7 @@ export default function StockPage() {
           </div>
 
           {shortfall.length > 0 ? (
-            <p className="mt-2 text-xs font-semibold text-rose-600">
+            <p className="mt-2 text-xs font-semibold text-coral-700">
               Stock insuffisant : {shortfall.map((item) => item.name).join(', ')}
             </p>
           ) : null}
@@ -277,7 +331,7 @@ export default function StockPage() {
                 key={item.id}
                 className={
                   'flex items-center justify-between rounded-xl border px-3 py-2 text-sm ' +
-                  (low ? 'border-rose-200 bg-rose-50' : 'border-slate-200 bg-white')
+                  (low ? 'border-coral-300 bg-coral-100' : 'border-slate-200 bg-white')
                 }
               >
                 <span className="font-medium text-slate-800">{item.name}</span>
@@ -308,7 +362,7 @@ export default function StockPage() {
                     {movement.rationnaires ? ` · ${movement.rationnaires} rationnaires` : ''}
                   </p>
                 </div>
-                <span className="text-xs font-semibold text-rose-600">
+                <span className="text-xs font-semibold text-coral-700">
                   -{movement.quantity} {movement.supply?.unit}
                 </span>
               </li>

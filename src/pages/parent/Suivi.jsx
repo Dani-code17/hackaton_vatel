@@ -106,7 +106,7 @@ export default function SuiviPage() {
               </div>
               <div className="text-right">
                 <p className="text-[10px] font-semibold uppercase text-slate-400">Solde</p>
-                <p className="text-lg font-bold text-teal-700">{fcfa(child.balance)}</p>
+                <p className="text-lg font-bold text-brand-900">{fcfa(child.balance)}</p>
               </div>
             </div>
 

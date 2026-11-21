@@ -2,10 +2,12 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { downloadCsv, fcfa, formatDay, todayISO } from '../../lib/format'
+import { modelConfig } from '../../lib/models'
 import { Alert, Badge, Button, Card, Field, Input, SectionTitle, Spinner } from '../../components/ui'
 
 export default function ComptabilitePage() {
   const { profile } = useAuth()
+  const [school, setSchool] = useState(null)
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState(null)
@@ -14,19 +16,24 @@ export default function ComptabilitePage() {
 
   const canWrite = ['gerant', 'directeur'].includes(profile?.role)
   const canSign = profile?.role === 'directeur'
+  const config = modelConfig(school?.model)
 
   const load = useCallback(async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('daily_accounting')
-      .select('*')
-      .order('service_date', { ascending: false })
-      .limit(21)
+    const [rowsResult, schoolResult] = await Promise.all([
+      supabase
+        .from('daily_accounting')
+        .select('*')
+        .order('service_date', { ascending: false })
+        .limit(21),
+      supabase.from('schools').select('*').eq('id', profile.school_id).maybeSingle(),
+    ])
 
-    if (error) setMessage({ tone: 'rose', text: error.message })
-    setRows(data ?? [])
+    if (rowsResult.error) setMessage({ tone: 'rose', text: rowsResult.error.message })
+    setRows(rowsResult.data ?? [])
+    setSchool(schoolResult.data)
     setLoading(false)
-  }, [])
+  }, [profile.school_id])
 
   useEffect(() => {
     load()
@@ -42,6 +49,10 @@ export default function ComptabilitePage() {
           school_id: profile.school_id,
           service_date: entry.service_date,
           served_count: Number(entry.served_count),
+          meal_price: school?.meal_price ?? 0,
+          versements_pct: school?.versements_pct ?? 0,
+          cantiniere_per_meal: school?.cantiniere_per_meal ?? 0,
+          employer_subsidy_pct: school?.employer_subsidy_pct ?? 0,
         },
         { onConflict: 'school_id,service_date' },
       )
@@ -70,37 +81,48 @@ export default function ComptabilitePage() {
     }
   }
 
-  if (loading) return <Spinner />
-
   const exportJournal = () => {
-    downloadCsv(`cahier-gestion-${todayISO()}.csv`, [
-      ['Date', 'Servis', 'Recette', 'Versements', 'Salaire cantiniere', 'Fonds local', 'Signature'],
-      ...rows.map((row) => [
-        row.service_date,
-        row.served_count,
-        row.revenue,
-        row.versements,
-        row.cantiniere_salary,
-        row.local_fund,
-        row.signed_at ? 'Signé' : 'En attente',
-      ]),
+    const header = ['Date', 'Servis', 'Chiffre', 'Fonds', 'Signature']
+    if (config.finance.versements) header.splice(2, 0, 'Versements', 'Cantiniere')
+    if (config.finance.employer) header.splice(2, 0, 'Part employeur', 'Part salarie')
+
+    downloadCsv('cahier-gestion-' + todayISO() + '.csv', [
+      header,
+      ...rows.map((row) => {
+        const line = [row.service_date, row.served_count]
+        if (config.finance.versements) line.push(row.versements, row.cantiniere_salary)
+        if (config.finance.employer) line.push(row.employer_share, row.payer_share)
+        line.push(row.revenue, row.local_fund, row.signed_at ? 'Signe' : 'En attente')
+        return line
+      }),
     ])
   }
+
+  if (loading) return <Spinner />
 
   const totals = rows.reduce(
     (acc, row) => ({
       revenue: acc.revenue + row.revenue,
       versements: acc.versements + row.versements,
       salary: acc.salary + row.cantiniere_salary,
+      employer: acc.employer + row.employer_share,
+      payer: acc.payer + row.payer_share,
       fund: acc.fund + row.local_fund,
       served: acc.served + row.served_count,
     }),
-    { revenue: 0, versements: 0, salary: 0, fund: 0, served: 0 },
+    { revenue: 0, versements: 0, salary: 0, employer: 0, payer: 0, fund: 0, served: 0 },
   )
 
   return (
     <div className="space-y-5">
       {message ? <Alert tone={message.tone}>{message.text}</Alert> : null}
+
+      <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+        <p className="text-sm font-semibold text-slate-800">{school?.name}</p>
+        <p className="text-xs text-slate-500">
+          {config.label} · {config.priceNote}
+        </p>
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
         <Card>
@@ -115,7 +137,7 @@ export default function ComptabilitePage() {
                 required
               />
             </Field>
-            <Field label="Rationnaires servis" hint="25 F par repas, 40 % État, 5 F cantinière">
+            <Field label="Rationnaires servis" hint={config.priceNote}>
               <Input
                 type="number"
                 min="0"
@@ -133,10 +155,17 @@ export default function ComptabilitePage() {
           <div className="mt-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-600">
             <p className="font-semibold text-slate-700">Formules appliquées</p>
             <ul className="mt-1 space-y-0.5">
-              <li>Recette = rationnaires × 25 F</li>
-              <li>Versements = recette × 40 %</li>
-              <li>Salaire = rationnaires × 5 F</li>
-              <li>Fonds local = recette − versements − salaire</li>
+              <li>{config.finance.revenue} = rationnaires × {school?.meal_price ?? 0} F</li>
+              {config.finance.versements ? (
+                <li>Versements = recette × {school?.versements_pct ?? 0} %</li>
+              ) : null}
+              {config.finance.salary ? (
+                <li>Salaire cantinière = rationnaires × {school?.cantiniere_per_meal ?? 0} F</li>
+              ) : null}
+              {config.finance.employer ? (
+                <li>Part employeur = valeur × {school?.employer_subsidy_pct ?? 0} %</li>
+              ) : null}
+              <li>{config.finance.fund} = reste après charges</li>
             </ul>
           </div>
         </Card>
@@ -156,10 +185,20 @@ export default function ComptabilitePage() {
               <tr>
                 <th className="py-2">Date</th>
                 <th className="py-2 text-right">Servis</th>
-                <th className="py-2 text-right">Recette</th>
-                <th className="py-2 text-right">Versements</th>
-                <th className="py-2 text-right">Cantinière</th>
-                <th className="py-2 text-right">Fonds local</th>
+                <th className="py-2 text-right">Chiffre</th>
+                {config.finance.versements ? (
+                  <>
+                    <th className="py-2 text-right">Versements</th>
+                    <th className="py-2 text-right">Cantinière</th>
+                  </>
+                ) : null}
+                {config.finance.employer ? (
+                  <>
+                    <th className="py-2 text-right">Employeur</th>
+                    <th className="py-2 text-right">Salarié</th>
+                  </>
+                ) : null}
+                <th className="py-2 text-right">Fonds</th>
                 <th className="py-2 text-right">Signature</th>
               </tr>
             </thead>
@@ -169,16 +208,28 @@ export default function ComptabilitePage() {
                   <td className="py-2 font-medium text-slate-800">{formatDay(row.service_date)}</td>
                   <td className="py-2 text-right">{row.served_count}</td>
                   <td className="py-2 text-right">{fcfa(row.revenue)}</td>
-                  <td className="py-2 text-right">{fcfa(row.versements)}</td>
-                  <td className="py-2 text-right">{fcfa(row.cantiniere_salary)}</td>
-                  <td className="py-2 text-right font-semibold text-teal-700">
-                    {fcfa(row.local_fund)}
-                  </td>
+                  {config.finance.versements ? (
+                    <>
+                      <td className="py-2 text-right">{fcfa(row.versements)}</td>
+                      <td className="py-2 text-right">{fcfa(row.cantiniere_salary)}</td>
+                    </>
+                  ) : null}
+                  {config.finance.employer ? (
+                    <>
+                      <td className="py-2 text-right">{fcfa(row.employer_share)}</td>
+                      <td className="py-2 text-right">{fcfa(row.payer_share)}</td>
+                    </>
+                  ) : null}
+                  <td className="py-2 text-right font-semibold text-brand-900">{fcfa(row.local_fund)}</td>
                   <td className="py-2 text-right">
                     {row.signed_at ? (
                       <Badge tone="teal">Signé</Badge>
                     ) : canSign ? (
-                      <Button variant="secondary" className="px-2 py-1 text-[11px]" onClick={() => sign(row)}>
+                      <Button
+                        variant="secondary"
+                        className="px-2 py-1 text-[11px]"
+                        onClick={() => sign(row)}
+                      >
                         Signer
                       </Button>
                     ) : (
@@ -193,9 +244,19 @@ export default function ComptabilitePage() {
                 <td className="py-2">Totaux</td>
                 <td className="py-2 text-right">{totals.served}</td>
                 <td className="py-2 text-right">{fcfa(totals.revenue)}</td>
-                <td className="py-2 text-right">{fcfa(totals.versements)}</td>
-                <td className="py-2 text-right">{fcfa(totals.salary)}</td>
-                <td className="py-2 text-right text-teal-700">{fcfa(totals.fund)}</td>
+                {config.finance.versements ? (
+                  <>
+                    <td className="py-2 text-right">{fcfa(totals.versements)}</td>
+                    <td className="py-2 text-right">{fcfa(totals.salary)}</td>
+                  </>
+                ) : null}
+                {config.finance.employer ? (
+                  <>
+                    <td className="py-2 text-right">{fcfa(totals.employer)}</td>
+                    <td className="py-2 text-right">{fcfa(totals.payer)}</td>
+                  </>
+                ) : null}
+                <td className="py-2 text-right text-brand-900">{fcfa(totals.fund)}</td>
                 <td />
               </tr>
             </tfoot>

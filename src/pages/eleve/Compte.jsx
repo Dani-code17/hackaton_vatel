@@ -93,10 +93,10 @@ export default function ComptePage() {
 
   return (
     <div className="space-y-5">
-      <Card className="bg-gradient-to-br from-teal-700 to-teal-600 text-white">
-        <p className="text-xs font-semibold uppercase tracking-wide text-teal-100">Solde disponible</p>
+      <Card className="bg-gradient-to-br from-brand-900 to-brand-700 text-white">
+        <p className="text-xs font-semibold uppercase tracking-wide text-brand-100">Solde disponible</p>
         <p className="mt-1 text-3xl font-bold">{fcfa(profile?.balance)}</p>
-        <p className="mt-1 text-xs text-teal-100">{profile?.full_name}</p>
+        <p className="mt-1 text-xs text-brand-100">{profile?.full_name}</p>
         {profile?.allergies?.length ? (
           <div className="mt-3 flex flex-wrap gap-1">
             {profile.allergies.map((allergen) => (
@@ -148,7 +148,7 @@ export default function ComptePage() {
                 className={
                   'rounded-xl border px-2 py-2 text-xs font-semibold transition ' +
                   (Number(amount) === value
-                    ? 'border-teal-600 bg-teal-50 text-teal-800'
+                    ? 'border-brand-700 bg-brand-50 text-brand-900'
                     : 'border-slate-200 text-slate-600 hover:border-slate-300')
                 }
               >
@@ -164,7 +164,7 @@ export default function ComptePage() {
               step="25"
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-100"
+              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-100"
             />
           </Field>
 
@@ -211,7 +211,7 @@ export default function ComptePage() {
                   <p
                     className={
                       'text-sm font-bold ' +
-                      (transaction.amount < 0 ? 'text-rose-600' : 'text-teal-700')
+                      (transaction.amount < 0 ? 'text-coral-700' : 'text-brand-900')
                     }
                   >
                     {transaction.amount > 0 ? '+' : ''}

@@ -179,7 +179,7 @@ export default function MaterielPage() {
                         <button
                           type="button"
                           onClick={() => removeItem(item)}
-                          className="rounded-lg px-2 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+                          className="rounded-lg px-2 py-1 text-xs font-semibold text-coral-700 hover:bg-coral-100"
                         >
                           Retirer
                         </button>

@@ -9,10 +9,10 @@ export function Card({ className = '', children }) {
 }
 
 const BUTTON_VARIANTS = {
-  primary: 'bg-teal-700 text-white hover:bg-teal-800 active:bg-teal-900',
-  secondary: 'bg-slate-100 text-slate-800 hover:bg-slate-200',
+  primary: 'bg-coral-500 text-brand-900 hover:bg-coral-600 active:bg-coral-600 shadow-sm',
+  secondary: 'bg-brand-50 text-brand-900 hover:bg-brand-100',
   ghost: 'text-slate-600 hover:bg-slate-100',
-  danger: 'bg-rose-600 text-white hover:bg-rose-700',
+  danger: 'bg-coral-700 text-white hover:bg-coral-700',
 }
 
 export function Button({
@@ -42,17 +42,17 @@ export function Button({
 
 const BADGE_TONES = {
   slate: 'bg-slate-100 text-slate-700',
-  teal: 'bg-teal-50 text-teal-800 ring-1 ring-teal-200',
+  teal: 'bg-brand-50 text-brand-900 ring-1 ring-brand-200',
   amber: 'bg-amber-50 text-amber-800 ring-1 ring-amber-200',
-  rose: 'bg-rose-50 text-rose-700 ring-1 ring-rose-200',
-  sky: 'bg-sky-50 text-sky-800 ring-1 ring-sky-200',
+  rose: 'bg-coral-100 text-coral-700 ring-1 ring-coral-300',
+  sky: 'bg-brand-50 text-brand-900 ring-1 ring-brand-200',
 }
 
 export function Badge({ tone = 'slate', className = '', children }) {
   return (
     <span
       className={cx(
-        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium',
+        'inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium',
         BADGE_TONES[tone],
         className,
       )}
@@ -76,7 +76,7 @@ export function Field({ label, hint, children }) {
 
 const CONTROL =
   'w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 ' +
-  'placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-100'
+  'placeholder:text-slate-400 focus:border-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-100'
 
 export function Input({ className = '', ...props }) {
   return <input className={cx(CONTROL, className)} {...props} />
@@ -106,7 +106,7 @@ export function Empty({ title, description }) {
 export function Spinner({ label = 'Chargement…' }) {
   return (
     <div className="flex items-center justify-center gap-2 py-10 text-sm text-slate-500">
-      <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-teal-600" />
+      <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-brand-700" />
       {label}
     </div>
   )
@@ -115,9 +115,9 @@ export function Spinner({ label = 'Chargement…' }) {
 export function Stat({ label, value, hint, tone = 'slate' }) {
   const tones = {
     slate: 'text-slate-900',
-    teal: 'text-teal-700',
+    teal: 'text-brand-900',
     amber: 'text-amber-600',
-    rose: 'text-rose-600',
+    rose: 'text-coral-700',
   }
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
@@ -130,9 +130,9 @@ export function Stat({ label, value, hint, tone = 'slate' }) {
 
 export function Alert({ tone = 'teal', title, children }) {
   const tones = {
-    teal: 'border-teal-200 bg-teal-50 text-teal-900',
+    teal: 'border-brand-200 bg-brand-50 text-brand-900',
     amber: 'border-amber-200 bg-amber-50 text-amber-900',
-    rose: 'border-rose-200 bg-rose-50 text-rose-900',
+    rose: 'border-coral-300 bg-coral-100 text-coral-700',
   }
   return (
     <div className={cx('rounded-xl border p-3 text-sm', tones[tone])}>
@@ -145,7 +145,7 @@ export function Alert({ tone = 'teal', title, children }) {
 export function SectionTitle({ children, action }) {
   return (
     <div className="mb-2 flex items-center justify-between">
-      <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">{children}</h2>
+      <h2 className="text-sm font-bold uppercase tracking-wide text-brand-900">{children}</h2>
       {action}
     </div>
   )

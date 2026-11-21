@@ -55,7 +55,7 @@ export default function HistoriquePage() {
             </p>
           </div>
           <div className="text-right">
-            <p className={'text-sm font-bold ' + (row.amount < 0 ? 'text-rose-600' : 'text-teal-700')}>
+            <p className={'text-sm font-bold ' + (row.amount < 0 ? 'text-coral-700' : 'text-brand-900')}>
               {row.amount > 0 ? '+' : ''}
               {fcfa(row.amount)}
             </p>

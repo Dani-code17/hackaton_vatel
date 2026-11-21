@@ -1,9 +1,42 @@
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Montserrat', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* Charte Vatel */
+  --color-brand-50: #eaf1fa;
+  --color-brand-100: #d6e6f6;
+  --color-brand-200: #89c2ea;
+  --color-brand-300: #6aabd8;
+  --color-brand-500: #89c2ea;
+  --color-brand-700: #0b3e7f;
+  --color-brand-900: #072a5d;
+
+  --color-coral-100: #ffe9e6;
+  --color-coral-200: #ffd2cc;
+  --color-coral-300: #ffb3ac;
+  --color-coral-500: #ff675b;
+  --color-coral-600: #ef5044;
+  --color-coral-700: #a83129;
+
+  --color-shell: #f4f7fa;
 }
 
 html {
   -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--color-shell);
+  color: #1f2937;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

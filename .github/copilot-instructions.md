@@ -81,3 +81,30 @@ comptoir, notifications temps réel, notation des plats.
 - **Secrets :** `.env` et `.vscode/mcp.json` restent hors du dépôt.
 - **Commits :** conventionnels et explicites (`feat:`, `fix:`, `docs:`, `chore:`).
 - **Qualité :** `npm run lint` avant chaque commit ; `npm run build` doit passer.
+
+## 10. Charte graphique Vatel
+
+| Rôle | Couleur | Usage |
+| --- | --- | --- |
+| Principale | `#072A5D` Bleu Marine | En-têtes, navigation, titres |
+| Secondaire | `#89C2EA` Bleu Ciel | Badges, accents, jauges |
+| Action | `#FF675B` Corail | Boutons principaux, alertes allergies |
+| Fond | `#F4F7FA` | Arrière-plan général |
+
+- Jetons déclarés dans `src/index.css` (`@theme`) : `brand-50/100/200/300/500/700/900`,
+  `coral-100/200/300/500/600/700`, `shell`. Ne jamais écrire une couleur brute dans un composant.
+- Typographie Montserrat, repli Inter puis system-ui.
+- Texte des boutons corail : bleu marine (`text-brand-900`) pour respecter le contraste AA.
+- Logo : composant `VatelLogo` (« VATEL — Cantine Campus Abidjan »).
+
+## 11. Multi-modèles d'établissement
+
+Chaque établissement porte un `model` : `public_dcs`, `prive` ou `entreprise`.
+
+- Les **libellés financiers**, les **sources d'approvisionnement** et l'affichage de
+  l'**indicateur PAM** viennent de `src/lib/models.js`. Ne pas dupliquer ces règles dans les pages.
+- Les calculs restent en base (`daily_accounting`), avec les paramètres du modèle recopiés
+  sur chaque journée : `versements_pct`, `cantiniere_per_meal`, `employer_subsidy_pct`.
+- En modèle entreprise, le salarié n'est débité que de sa part (`prix × (100 − subvention) / 100`).
+- La bascule d'établissement en démonstration passe par `switch_active_school`, qui met à jour
+  `profiles.school_id` ; toutes les politiques RLS suivent ensuite automatiquement.
