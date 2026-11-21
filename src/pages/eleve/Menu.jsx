@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { addDays, fcfa, formatDay, todayISO } from '../../lib/format'
-import { Alert, Badge, Button, Card, Empty, SectionTitle, Spinner } from '../../components/ui'
+import { addDays, cx, fcfa, formatDay, todayISO } from '../../lib/format'
+import { Alert, Badge, Button, Card, Empty, Icon, Spinner } from '../../components/ui'
 
 const CACHE_KEY = 'cantine:menus'
 
@@ -30,6 +31,7 @@ export default function MenuPage() {
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState(null)
   const [message, setMessage] = useState(null)
+  const [filter, setFilter] = useState('all')
 
   const today = todayISO()
 
@@ -56,10 +58,7 @@ export default function MenuPage() {
       const cached = readCache()
       if (cached.length > 0) {
         setMeals(cached)
-        setMessage({
-          tone: 'amber',
-          text: 'Hors ligne : menu affiché depuis le cache local.',
-        })
+        setMessage({ tone: 'amber', text: 'Hors ligne : menu affiché depuis le cache local.' })
       } else {
         setMessage({ tone: 'rose', text: mealsResult.error.message })
       }
@@ -81,16 +80,22 @@ export default function MenuPage() {
     [reservations],
   )
 
-  const breadcrumbByDay = useMemo(() => {
+  const myAllergies = (profile?.allergies ?? []).map((a) => a.toLowerCase())
+
+  const filtered = useMemo(() => {
+    if (filter === 'today') return meals.filter((meal) => meal.service_date === today)
+    if (filter === 'veg') return meals.filter((meal) => meal.vegetarian)
+    return meals
+  }, [filter, meals, today])
+
+  const grouped = useMemo(() => {
     const groups = new Map()
-    for (const meal of meals) {
+    for (const meal of filtered) {
       if (!groups.has(meal.service_date)) groups.set(meal.service_date, [])
       groups.get(meal.service_date).push(meal)
     }
     return [...groups.entries()]
-  }, [meals])
-
-  const myAllergies = (profile?.allergies ?? []).map((a) => a.toLowerCase())
+  }, [filtered])
 
   const reserve = async (meal) => {
     setBusyId(meal.id)
@@ -110,83 +115,197 @@ export default function MenuPage() {
 
   if (loading) return <Spinner />
 
+  const firstName = (profile?.full_name ?? '').split(' ')[0]
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-display text-[9px] font-bold uppercase tracking-[0.16em] text-coral-500">
+            Session étudiante active
+          </p>
+          <h1 className="mt-1 font-display text-2xl font-bold leading-tight text-brand-900">
+            Bonjour, {firstName}
+          </h1>
+          <p className="mt-1 text-xs text-slate-500">Carte du jour · Campus Abidjan</p>
+        </div>
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-100 font-display text-sm font-bold text-brand-900 ring-1 ring-brand-200">
+          {(profile?.full_name ?? 'V')
+            .split(' ')
+            .slice(0, 2)
+            .map((part) => part[0])
+            .join('')}
+        </span>
+      </div>
+
+      <Card className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="font-display text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500">
+              Solde cantine & services
+            </p>
+            <p className="mt-1 font-display text-3xl font-bold tracking-tight text-brand-900">
+              {fcfa(profile?.balance)}
+            </p>
+            <p className="mt-0.5 text-[11px] text-slate-400">Recharge instantanée sécurisée</p>
+          </div>
+          <Badge tone="teal">
+            {reservations.filter((r) => r.status === 'reservee').length} repas restant
+            {reservations.filter((r) => r.status === 'reservee').length > 1 ? 's' : ''}
+          </Badge>
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <Link
+            to="/eleve/compte"
+            className="flex items-center justify-center gap-2 rounded-lg border border-brand-200 bg-brand-50 py-2 font-display text-[11px] font-semibold text-brand-900"
+          >
+            <Icon name="waves" className="text-[16px]" /> Wave
+          </Link>
+          <Link
+            to="/eleve/compte"
+            className="flex items-center justify-center gap-2 rounded-lg border border-coral-200 bg-coral-100 py-2 font-display text-[11px] font-semibold text-coral-700"
+          >
+            <Icon name="phone_iphone" className="text-[16px]" /> Orange Money
+          </Link>
+        </div>
+      </Card>
+
       {message ? <Alert tone={message.tone}>{message.text}</Alert> : null}
 
       {profile && profile.balance < 50 ? (
         <Alert tone="amber" title="Solde bas">
-          Il reste {fcfa(profile.balance)}. Pensez à recharger pour réserver les prochains repas.
+          Il reste {fcfa(profile.balance)}. Rechargez pour réserver les prochains repas.
         </Alert>
       ) : null}
 
-      {breadcrumbByDay.length === 0 ? (
+      <div>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="flex min-w-0 items-center gap-1.5 font-display text-[17px] font-bold leading-tight text-brand-900">
+            <Icon name="restaurant" className="shrink-0 text-[18px]" />
+            <span className="truncate">Haute table pédagogique</span>
+          </h2>
+          <span className="shrink-0 whitespace-nowrap font-display text-[10px] font-bold uppercase tracking-[0.08em] text-coral-500">
+            Service midi
+          </span>
+        </div>
+
+        <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
+          {[
+            { id: 'all', label: 'Tous les mets' },
+            { id: 'today', label: "Aujourd'hui", dot: true },
+            { id: 'veg', label: 'Végétarien' },
+          ].map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setFilter(item.id)}
+              className={cx(
+                'flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 font-display text-[11px] font-semibold transition',
+                filter === item.id
+                  ? 'bg-brand-900 text-white'
+                  : 'border border-slate-200 bg-white text-slate-600',
+              )}
+            >
+              {item.dot ? (
+                <span className="h-1.5 w-1.5 rounded-full bg-coral-500" aria-hidden="true" />
+              ) : null}
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {grouped.length === 0 ? (
         <Empty
-          title="Aucun menu publié"
+          title="Aucun plat publié"
           description="Le gérant n'a pas encore publié les plats de la semaine."
         />
       ) : null}
 
-      {breadcrumbByDay.map(([date, dayMeals]) => (
-        <section key={date} className="space-y-2">
-          <SectionTitle
-            action={
-              date === today ? <Badge tone="teal">Aujourd&apos;hui</Badge> : null
-            }
-          >
-            {formatDay(date)}
-          </SectionTitle>
+      {grouped.map(([date, dayMeals]) => (
+        <section key={date} className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-display text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+              {formatDay(date)}
+            </h3>
+            {date === today ? <Badge tone="rose">Aujourd&apos;hui</Badge> : null}
+          </div>
 
           {dayMeals.map((meal) => {
             const reserved = reservedIds.has(meal.id)
             const conflicts = meal.allergens.filter((a) => myAllergies.includes(a.toLowerCase()))
-            const full = (meal._count ?? 0) >= meal.capacity
 
             return (
-              <Card key={meal.id} className="space-y-2">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h3 className="truncate font-semibold text-slate-900">{meal.name}</h3>
-                    <p className="text-xs text-slate-500">{meal.description}</p>
+              <Card key={meal.id} className="overflow-hidden">
+                <div className="relative h-20 bg-gradient-to-br from-brand-900 via-brand-700 to-brand-500">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Icon name="restaurant" className="text-[40px] text-white/25" filled />
                   </div>
-                  <p className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-sm font-bold text-slate-800">
-                    {fcfa(meal.price)}
-                  </p>
+                  <div className="absolute right-2 top-2 flex flex-wrap justify-end gap-1">
+                    {meal.vegetarian ? <Badge tone="sky">Végétarien</Badge> : null}
+                    {conflicts.length > 0 ? <Badge tone="rose">⚠ Allergie</Badge> : null}
+                  </div>
                 </div>
 
-                <div className="flex flex-wrap gap-1">
-                  {meal.vegetarian ? <Badge tone="teal">Végétarien</Badge> : null}
-                  {meal.allergens.map((allergen) => (
-                    <Badge key={allergen} tone="slate">
-                      {allergen}
-                    </Badge>
-                  ))}
-                  {conflicts.length > 0 ? <Badge tone="rose">⚠ Allergie</Badge> : null}
+                <div className="p-4">
+                  <h4 className="font-display text-base font-bold leading-snug text-brand-900">
+                    {meal.name}
+                  </h4>
+                  {meal.description ? (
+                    <p className="mt-1 text-xs leading-relaxed text-slate-500">{meal.description}</p>
+                  ) : null}
+
+                  {meal.allergens.length > 0 ? (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {meal.allergens.map((allergen) => (
+                        <Badge key={allergen} tone="slate">
+                          {allergen}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {conflicts.length > 0 ? (
+                    <div className="mt-2">
+                      <Alert tone="rose">
+                        Contient {conflicts.join(', ')} — signalé dans votre profil.
+                      </Alert>
+                    </div>
+                  ) : null}
+
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="font-display text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
+                        Tarif étudiant
+                      </p>
+                      <p className="font-display text-lg font-bold tabular-nums text-brand-900">
+                        {fcfa(meal.price)}
+                      </p>
+                    </div>
+
+                    {reserved ? (
+                      <span className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-brand-50 px-3 font-display text-[12px] font-semibold text-brand-900">
+                        <Icon name="check_circle" className="text-[17px]" /> Réservé
+                      </span>
+                    ) : (
+                      <Button
+                        className="h-11 px-3 text-[12px]"
+                        disabled={busyId === meal.id || profile?.balance < meal.price}
+                        onClick={() => reserve(meal)}
+                      >
+                        {busyId === meal.id
+                          ? 'Réservation…'
+                          : profile?.balance < meal.price
+                            ? 'Solde insuffisant'
+                            : 'Réserver & Pass QR'}
+                        {busyId === meal.id ? null : (
+                          <Icon name="arrow_forward" className="text-[16px]" />
+                        )}
+                      </Button>
+                    )}
+                  </div>
                 </div>
-
-                {conflicts.length > 0 ? (
-                  <Alert tone="rose">
-                    Ce plat contient : {conflicts.join(', ')}. Signalé dans votre profil.
-                  </Alert>
-                ) : null}
-
-                {reserved ? (
-                  <Button variant="secondary" className="w-full" disabled>
-                    ✓ Déjà réservé
-                  </Button>
-                ) : (
-                  <Button
-                    className="w-full"
-                    disabled={busyId === meal.id || full || profile?.balance < meal.price}
-                    onClick={() => reserve(meal)}
-                  >
-                    {busyId === meal.id
-                      ? 'Réservation…'
-                      : profile?.balance < meal.price
-                        ? 'Solde insuffisant'
-                        : 'Réserver ce repas'}
-                  </Button>
-                )}
               </Card>
             )
           })}

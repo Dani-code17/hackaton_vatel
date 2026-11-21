@@ -1,10 +1,25 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { fcfa, formatTime } from '../../lib/format'
-import { Alert, Badge, Button, Card, Field, Input, SectionTitle, Select, Spinner } from '../../components/ui'
+import { cx, fcfa, formatTime } from '../../lib/format'
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Field,
+  Icon,
+  Input,
+  SectionTitle,
+  Spinner,
+} from '../../components/ui'
 
-const QUICK_AMOUNTS = [200, 500, 1000, 2000]
+const QUICK_AMOUNTS = [500, 1500, 3000, 7500]
+const METHODS = [
+  { value: 'wave', label: 'Wave', icon: 'waves' },
+  { value: 'orange_money', label: 'Orange', icon: 'phone_iphone' },
+  { value: 'especes', label: 'Espèces', icon: 'payments' },
+]
 
 const KIND_LABELS = {
   recharge: 'Recharge',
@@ -16,7 +31,7 @@ export default function ComptePage() {
   const { user, profile, refresh } = useAuth()
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
-  const [amount, setAmount] = useState(500)
+  const [amount, setAmount] = useState(1500)
   const [method, setMethod] = useState('wave')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState(null)
@@ -58,7 +73,7 @@ export default function ComptePage() {
       await load()
       setMessage({
         tone: 'teal',
-        text: `Recharge de ${fcfa(amount)} confirmée via ${method === 'wave' ? 'Wave' : 'Orange Money'}.`,
+        text: `Recharge de ${fcfa(amount)} confirmée via ${METHODS.find((m) => m.value === method)?.label}.`,
       })
     } catch (error) {
       setMessage({ tone: 'rose', text: error.message })
@@ -92,31 +107,118 @@ export default function ComptePage() {
   }
 
   return (
-    <div className="space-y-5">
-      <Card className="bg-gradient-to-br from-brand-900 to-brand-700 text-white">
-        <p className="text-xs font-semibold uppercase tracking-wide text-brand-100">Solde disponible</p>
-        <p className="mt-1 text-3xl font-bold">{fcfa(profile?.balance)}</p>
-        <p className="mt-1 text-xs text-brand-100">{profile?.full_name}</p>
+    <div className="space-y-4">
+      <div>
+        <h1 className="font-display text-2xl font-bold leading-tight text-brand-900">Solde & Wave</h1>
+        <p className="mt-1 text-xs text-slate-500">Portefeuille cantine et rechargement instantané</p>
+      </div>
+
+      {message ? <Alert tone={message.tone}>{message.text}</Alert> : null}
+
+      <Card className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="font-display text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500">
+              Solde cantine & services
+            </p>
+            <p className="mt-1 font-display text-3xl font-bold tabular-nums text-brand-900">
+              {fcfa(profile?.balance)}
+            </p>
+            <p className="mt-0.5 text-[11px] text-slate-400">{profile?.full_name}</p>
+          </div>
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-50 text-brand-900 ring-1 ring-brand-200">
+            <Icon name="account_balance_wallet" className="text-[20px]" />
+          </span>
+        </div>
+
         {profile?.allergies?.length ? (
           <div className="mt-3 flex flex-wrap gap-1">
             {profile.allergies.map((allergen) => (
-              <span
-                key={allergen}
-                className="rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-semibold ring-1 ring-white/30"
-              >
+              <Badge key={allergen} tone="rose">
                 ⚠ {allergen}
-              </span>
+              </Badge>
             ))}
           </div>
         ) : null}
       </Card>
 
-      {message ? <Alert tone={message.tone}>{message.text}</Alert> : null}
+      <Card className="p-4">
+        <SectionTitle>Recharger le compte</SectionTitle>
+        <form onSubmit={recharge} className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            {QUICK_AMOUNTS.map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setAmount(value)}
+                className={cx(
+                  'rounded-lg border px-3 py-2.5 text-left transition',
+                  Number(amount) === value
+                    ? 'border-brand-900 bg-brand-900 text-white'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-brand-200',
+                )}
+              >
+                <span className="block font-display text-[13px] font-bold tabular-nums">
+                  +{fcfa(value)}
+                </span>
+                <span
+                  className={cx(
+                    'text-[10px]',
+                    Number(amount) === value ? 'text-brand-200' : 'text-slate-400',
+                  )}
+                >
+                  {value <= 500 ? 'Collation' : `${Math.floor(value / 1500) || 1} repas`}
+                </span>
+              </button>
+            ))}
+          </div>
 
-      <Card>
+          <Field label="Montant (FCFA)">
+            <Input
+              type="number"
+              min="25"
+              step="25"
+              value={amount}
+              onChange={(event) => setAmount(event.target.value)}
+            />
+          </Field>
+
+          <div>
+            <p className="mb-1.5 font-display text-[10px] font-bold uppercase tracking-[0.09em] text-slate-500">
+              Moyen de paiement
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {METHODS.map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  onClick={() => setMethod(item.value)}
+                  className={cx(
+                    'flex flex-col items-center gap-1 rounded-lg border py-2 font-display text-[10px] font-semibold transition',
+                    method === item.value
+                      ? 'border-brand-900 bg-brand-50 text-brand-900'
+                      : 'border-slate-200 bg-white text-slate-500',
+                  )}
+                >
+                  <Icon name={item.icon} className="text-[18px]" />
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <Button type="submit" className="w-full" disabled={busy}>
+            <Icon name="bolt" className="text-[17px]" />
+            {busy ? 'Traitement…' : `Recharger ${fcfa(amount)}`}
+          </Button>
+          <p className="text-center text-[10px] text-slate-400">Paiement simulé pour la démonstration</p>
+        </form>
+      </Card>
+
+      <Card className="p-4">
         <SectionTitle>Mon profil alimentaire</SectionTitle>
         <form onSubmit={saveProfile} className="space-y-3">
-          <Field label="Allergies" hint="séparées par des virgules — elles déclenchent une alerte au comptoir">
+          <Field label="Allergies" hint="séparées par des virgules — alerte au comptoir">
             <Input
               value={allergiesInput}
               onChange={(event) => setAllergiesInput(event.target.value)}
@@ -136,91 +238,55 @@ export default function ComptePage() {
         </form>
       </Card>
 
-      <Card>
-        <SectionTitle>Recharger mon compte</SectionTitle>
-        <form onSubmit={recharge} className="space-y-3">
-          <div className="grid grid-cols-4 gap-2">
-            {QUICK_AMOUNTS.map((value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setAmount(value)}
-                className={
-                  'rounded-xl border px-2 py-2 text-xs font-semibold transition ' +
-                  (Number(amount) === value
-                    ? 'border-brand-700 bg-brand-50 text-brand-900'
-                    : 'border-slate-200 text-slate-600 hover:border-slate-300')
-                }
-              >
-                {fcfa(value)}
-              </button>
-            ))}
-          </div>
-
-          <Field label="Montant (FCFA)">
-            <input
-              type="number"
-              min="25"
-              step="25"
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-100"
-            />
-          </Field>
-
-          <Field label="Moyen de paiement">
-            <Select value={method} onChange={(event) => setMethod(event.target.value)}>
-              <option value="wave">Wave</option>
-              <option value="orange_money">Orange Money</option>
-              <option value="especes">Espèces (au comptoir)</option>
-            </Select>
-          </Field>
-
-          <Button type="submit" className="w-full" disabled={busy}>
-            {busy ? 'Traitement…' : `Recharger ${fcfa(amount)}`}
-          </Button>
-          <p className="text-center text-[11px] text-slate-400">
-            Paiement simulé pour la démonstration
-          </p>
-        </form>
-      </Card>
-
       <section>
-        <SectionTitle>Historique</SectionTitle>
+        <SectionTitle>Historique des mouvements</SectionTitle>
         {loading ? (
           <Spinner />
         ) : transactions.length === 0 ? (
-          <p className="rounded-xl bg-white p-4 text-center text-xs text-slate-500">
+          <p className="rounded-xl border border-slate-200 bg-white p-4 text-center text-xs text-slate-500">
             Aucun mouvement pour le moment.
           </p>
         ) : (
-          <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <ul className="space-y-2">
             {transactions.map((transaction) => (
-              <li key={transaction.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-slate-800">
-                    {KIND_LABELS[transaction.kind] ?? transaction.kind}
-                  </p>
-                  <p className="text-[11px] text-slate-400">
-                    {new Date(transaction.created_at).toLocaleDateString('fr-FR')} ·{' '}
-                    {formatTime(transaction.created_at)}
-                    {transaction.reference ? ` · ${transaction.reference}` : ''}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p
-                    className={
-                      'text-sm font-bold ' +
-                      (transaction.amount < 0 ? 'text-coral-700' : 'text-brand-900')
-                    }
+              <li
+                key={transaction.id}
+                className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5"
+              >
+                <div className="flex min-w-0 items-center gap-2">
+                  <span
+                    className={cx(
+                      'grid h-8 w-8 shrink-0 place-items-center rounded-lg',
+                      transaction.amount < 0
+                        ? 'bg-coral-100 text-coral-500'
+                        : 'bg-brand-50 text-brand-900',
+                    )}
                   >
-                    {transaction.amount > 0 ? '+' : ''}
-                    {fcfa(transaction.amount)}
-                  </p>
-                  {transaction.method && transaction.method !== 'systeme' ? (
-                    <Badge tone="slate">{transaction.method}</Badge>
-                  ) : null}
+                    <Icon
+                      name={transaction.amount < 0 ? 'restaurant' : 'add_card'}
+                      className="text-[16px]"
+                    />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate font-display text-[12px] font-semibold text-slate-800">
+                      {KIND_LABELS[transaction.kind] ?? transaction.kind}
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      {new Date(transaction.created_at).toLocaleDateString('fr-FR')} ·{' '}
+                      {formatTime(transaction.created_at)}
+                      {transaction.reference ? ` · ${transaction.reference}` : ''}
+                    </p>
+                  </div>
                 </div>
+                <p
+                  className={cx(
+                    'shrink-0 font-display text-[13px] font-bold tabular-nums',
+                    transaction.amount < 0 ? 'text-coral-500' : 'text-brand-900',
+                  )}
+                >
+                  {transaction.amount > 0 ? '+' : ''}
+                  {fcfa(transaction.amount)}
+                </p>
               </li>
             ))}
           </ul>

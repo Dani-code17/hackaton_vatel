@@ -88,3 +88,6 @@ Guide des participants Cantine Vatel.pdf
 .oxlintcache
 .vercel
 .turbo
+
+# Artefacts de test navigateur
+.playwright-mcp/

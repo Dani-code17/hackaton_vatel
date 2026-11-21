@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { ROLE_HOME, ROLE_LABELS } from '../lib/format'
-import { Alert, Button, Card, Field, Input } from '../components/ui'
+import { Alert, Button, Card, Field, Icon, Input } from '../components/ui'
 
 const DEMO_ACCOUNTS = [
   { role: 'eleve', email: 'eleve@vatel.test' },
@@ -43,35 +43,40 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-dvh bg-gradient-to-b from-brand-900 via-brand-700 to-shell px-4 py-10">
-      <div className="mx-auto w-full max-w-sm">
-        <div className="mb-6 flex flex-col items-center gap-3 text-center text-white">
-          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-coral-500 text-2xl font-extrabold text-on-accent">
-            V
-          </div>
-          <div>
-            <p className="text-xl font-extrabold uppercase tracking-[0.35em]">Vatel</p>
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-brand-200">
-              Cantine Campus Abidjan
-            </p>
-          </div>
-          <p className="max-w-xs text-sm text-brand-100/90">
-            Menus, réservations, pass repas et gestion de la cantine
-          </p>
+    <div className="min-h-dvh bg-brand-900">
+      <div className="px-5 pb-6 pt-10 text-center">
+        <div className="mx-auto w-40 rounded-2xl bg-white p-3 shadow-[0_16px_36px_rgba(0,0,0,0.25)]">
+          <img src="/vatel-logo.svg" alt="Vatel" className="mx-auto h-auto w-full" />
         </div>
+        <p className="mt-4 font-display text-[10px] font-bold uppercase tracking-[0.28em] text-brand-200">
+          Cantine Campus Abidjan
+        </p>
+        <h1 className="mt-1 font-display text-xl font-bold text-white">
+          L&apos;excellence hôtelière au quotidien
+        </h1>
+      </div>
 
-        <Card className="space-y-4">
+      <div className="rounded-t-[28px] bg-shell px-5 pb-10 pt-6">
+        <Card className="p-4">
           <form onSubmit={submit} className="space-y-3">
+            <div>
+              <p className="font-display text-[10px] font-bold uppercase tracking-[0.14em] text-coral-500">
+                Accès sécurisé
+              </p>
+              <h2 className="font-display text-lg font-bold text-brand-900">Connexion</h2>
+            </div>
+
             <Field label="Adresse e-mail">
               <Input
                 type="email"
                 autoComplete="username"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="prenom.nom@ecole.ci"
+                placeholder="prenom.nom@vatel.ci"
                 required
               />
             </Field>
+
             <Field label="Mot de passe">
               <Input
                 type="password"
@@ -86,12 +91,13 @@ export default function Login() {
 
             <Button type="submit" className="w-full" disabled={busy}>
               {busy ? 'Connexion…' : 'Se connecter'}
+              {busy ? null : <Icon name="arrow_forward" className="text-[17px]" />}
             </Button>
           </form>
 
-          <div className="border-t border-slate-100 pt-3">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-              Comptes de démonstration · mot de passe Demo1234!
+          <div className="mt-4 border-t border-slate-100 pt-3">
+            <p className="mb-2 font-display text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">
+              Comptes de démonstration · Demo1234!
             </p>
             <div className="grid grid-cols-2 gap-2">
               {DEMO_ACCOUNTS.map((account) => (
@@ -99,20 +105,20 @@ export default function Login() {
                   key={account.email}
                   type="button"
                   onClick={() => fillDemo(account)}
-                  className="rounded-xl border border-slate-200 px-2 py-2 text-left text-xs font-semibold text-brand-900 hover:border-brand-200 hover:bg-brand-50"
+                  className="rounded-lg border border-slate-200 px-2.5 py-2 text-left transition hover:border-brand-200 hover:bg-brand-50"
                 >
-                  {ROLE_LABELS[account.role]}
-                  <span className="block truncate text-[10px] font-normal text-slate-400">
-                    {account.email}
+                  <span className="block font-display text-[11px] font-semibold text-brand-900">
+                    {ROLE_LABELS[account.role]}
                   </span>
+                  <span className="block truncate text-[10px] text-slate-400">{account.email}</span>
                 </button>
               ))}
             </div>
           </div>
         </Card>
 
-        <p className="mt-4 text-center text-xs text-white/80">
-          Projet hackathon · données de démonstration
+        <p className="mt-4 text-center text-[10px] uppercase tracking-[0.14em] text-slate-400">
+          Hackathon Vatel 2026 · Démonstration
         </p>
       </div>
     </div>

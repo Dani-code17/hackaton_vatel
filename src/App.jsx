@@ -71,7 +71,9 @@ export default function App() {
     <AuthProvider>
       <UniverseProvider>
         <BrowserRouter>
-          <Routes>
+          <div className="min-h-dvh bg-slate-200">
+            <div className="relative mx-auto min-h-dvh w-full max-w-[430px] overflow-x-hidden bg-shell shadow-2xl">
+              <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<HomeRedirect />} />
 
@@ -131,7 +133,9 @@ export default function App() {
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+              </Routes>
+            </div>
+          </div>
         </BrowserRouter>
       </UniverseProvider>
     </AuthProvider>

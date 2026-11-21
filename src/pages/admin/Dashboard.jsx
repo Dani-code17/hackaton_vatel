@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { fcfa, formatDay, todayISO } from '../../lib/format'
-import { accentOf, daysGained, modelConfig } from '../../lib/models'
+import { daysGained, modelConfig } from '../../lib/models'
 import CoverageGauge from '../../components/CoverageGauge'
 import { Alert, Badge, Card, SectionTitle, Spinner, Stat } from '../../components/ui'
 
@@ -77,7 +77,6 @@ export default function DashboardPage() {
 
   const school = state.school
   const config = modelConfig(school?.model)
-  const accent = accentOf(school?.model)
   const served = state.reservations.filter((r) => r.status === 'servie').length
   const booked = state.reservations.filter((r) => r.status === 'reservee').length
   const accounting = state.accounting
@@ -114,20 +113,35 @@ export default function DashboardPage() {
       : { label: 'Marge du jour', value: fcfa(accounting?.local_fund) }
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h2 className="text-lg font-bold text-slate-900">{school?.name ?? 'Établissement'}</h2>
-          <p className="text-xs text-slate-500">
-            {formatDay(today)} · {school?.enrolled_count ?? 0}{' '}
-            {school?.model === 'entreprise' ? 'salariés' : 'élèves'} · {config.priceNote}
-          </p>
+      <div className="relative overflow-hidden rounded-2xl bg-brand-900 p-4 text-white shadow-[0_16px_36px_rgba(7,42,93,0.28)]">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-display text-[9px] font-bold uppercase tracking-[0.16em] text-brand-200">
+              {config.label}
+            </p>
+            <h2 className="mt-1 font-display text-lg font-bold leading-tight">{school?.name}</h2>
+            <p className="mt-1 text-[11px] text-brand-200">
+              {formatDay(today)} · {school?.enrolled_count ?? 0}{' '}
+              {school?.model === 'entreprise' ? 'salariés' : 'élèves'}
+            </p>
+          </div>
+          <Badge tone="success">● Temps réel</Badge>
         </div>
-        <div className="flex items-center gap-2">
-          <span className={'rounded-full px-2 py-0.5 text-[11px] font-semibold ' + accent.badge}>
-            {config.label}
+
+        <div className="mt-4 flex items-end justify-between gap-3">
+          <div>
+            <p className="font-display text-[9px] font-bold uppercase tracking-[0.14em] text-brand-200">
+              Chiffre du jour
+            </p>
+            <p className="font-display text-3xl font-bold tabular-nums">
+              {fcfa(accounting?.revenue)}
+            </p>
+          </div>
+          <span className="rounded-full bg-white/10 px-2.5 py-1 font-display text-[10px] font-semibold ring-1 ring-white/20">
+            {config.short}
           </span>
-          <Badge tone="teal">● Temps réel</Badge>
         </div>
+        <p className="mt-2 text-[10px] text-brand-200">{config.priceNote}</p>
       </div>
 
       {state.lowStock.length > 0 ? (
