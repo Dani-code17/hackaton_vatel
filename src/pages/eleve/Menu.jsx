@@ -4,6 +4,25 @@ import { supabase } from '../../lib/supabase'
 import { addDays, fcfa, formatDay, todayISO } from '../../lib/format'
 import { Alert, Badge, Button, Card, Empty, SectionTitle, Spinner } from '../../components/ui'
 
+const CACHE_KEY = 'cantine:menus'
+
+function readCache() {
+  try {
+    const raw = window.localStorage.getItem(CACHE_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+function writeCache(meals) {
+  try {
+    window.localStorage.setItem(CACHE_KEY, JSON.stringify(meals))
+  } catch {
+    // quota dépassé : le cache est un confort, pas un prérequis
+  }
+}
+
 export default function MenuPage() {
   const { user, profile, refresh } = useAuth()
   const [meals, setMeals] = useState([])
@@ -33,8 +52,22 @@ export default function MenuPage() {
         .neq('status', 'annulee'),
     ])
 
-    if (mealsResult.error) setMessage({ tone: 'rose', text: mealsResult.error.message })
-    setMeals(mealsResult.data ?? [])
+    if (mealsResult.error) {
+      const cached = readCache()
+      if (cached.length > 0) {
+        setMeals(cached)
+        setMessage({
+          tone: 'amber',
+          text: 'Hors ligne : menu affiché depuis le cache local.',
+        })
+      } else {
+        setMessage({ tone: 'rose', text: mealsResult.error.message })
+      }
+    } else {
+      setMeals(mealsResult.data)
+      writeCache(mealsResult.data)
+    }
+
     setReservations(reservationsResult.data ?? [])
     setLoading(false)
   }, [today, user])

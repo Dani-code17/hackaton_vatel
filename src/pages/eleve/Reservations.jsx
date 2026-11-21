@@ -14,6 +14,7 @@ const STATUS = {
 export default function ReservationsPage() {
   const { user, refresh } = useAuth()
   const [rows, setRows] = useState([])
+  const [ratings, setRatings] = useState({})
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState(null)
   const [busyId, setBusyId] = useState(null)
@@ -21,14 +22,22 @@ export default function ReservationsPage() {
   const load = useCallback(async () => {
     if (!user) return
     setLoading(true)
-    const { data, error } = await supabase
-      .from('reservations')
-      .select('id, status, qr_token, served_at, created_at, meal:meals(name, service_date, price, allergens)')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
+    const [reservationsResult, ratingsResult] = await Promise.all([
+      supabase
+        .from('reservations')
+        .select('id, status, qr_token, served_at, created_at, meal:meals(id, name, service_date, price, allergens)')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false }),
+      supabase.from('meal_ratings').select('meal_id, stars').eq('user_id', user.id),
+    ])
 
-    if (error) setMessage({ tone: 'rose', text: error.message })
-    setRows(data ?? [])
+    if (reservationsResult.error) {
+      setMessage({ tone: 'rose', text: reservationsResult.error.message })
+    }
+    setRows(reservationsResult.data ?? [])
+    setRatings(
+      Object.fromEntries((ratingsResult.data ?? []).map((row) => [row.meal_id, row.stars])),
+    )
     setLoading(false)
   }, [user])
 
@@ -51,6 +60,22 @@ export default function ReservationsPage() {
       setMessage({ tone: 'rose', text: error.message })
     } finally {
       setBusyId(null)
+    }
+  }
+
+  const rate = async (mealId, stars) => {
+    try {
+      const { error } = await supabase
+        .from('meal_ratings')
+        .upsert(
+          { meal_id: mealId, user_id: user.id, stars },
+          { onConflict: 'meal_id,user_id' },
+        )
+      if (error) throw error
+      setRatings((current) => ({ ...current, [mealId]: stars }))
+      setMessage({ tone: 'teal', text: 'Merci pour votre note !' })
+    } catch (error) {
+      setMessage({ tone: 'rose', text: error.message })
     }
   }
 
@@ -111,6 +136,28 @@ export default function ReservationsPage() {
               <p className="text-xs text-slate-500">
                 Servi à {new Date(reservation.served_at).toLocaleTimeString('fr-FR')}
               </p>
+            ) : null}
+
+            {reservation.status === 'servie' && meal?.id ? (
+              <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
+                <span className="text-xs font-semibold text-slate-600">Notez ce plat</span>
+                <div className="flex gap-0.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      aria-label={`Noter ${star} sur 5`}
+                      onClick={() => rate(meal.id, star)}
+                      className={
+                        'text-lg leading-none transition ' +
+                        (star <= (ratings[meal.id] ?? 0) ? 'text-amber-500' : 'text-slate-300')
+                      }
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+              </div>
             ) : null}
           </Card>
         )
