@@ -98,19 +98,25 @@ export default function SuiviPage() {
           (reservation) => reservation.meal?.service_date === today,
         )
         return (
-          <Card key={child.id} className="space-y-3">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h3 className="font-semibold text-slate-900">{child.full_name}</h3>
-                <p className="text-xs text-slate-500">
+          <Card key={child.id} className="space-y-3 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="truncate font-display text-[15px] font-bold text-brand-900">
+                  {child.full_name}
+                </h3>
+                <p className="mt-0.5 text-[11px] text-slate-500">
                   {todayReservations.length > 0
                     ? t('parent.mealsToday', { count: todayReservations.length })
                     : t('parent.noMealToday')}
                 </p>
               </div>
-              <div className="text-right">
-                <p className="text-[10px] font-semibold uppercase text-slate-400">{t('compte.available')}</p>
-                <p className="text-lg font-bold text-brand-900">{fcfa(child.balance)}</p>
+              <div className="shrink-0 text-right">
+                <p className="font-display text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400">
+                  {t('compte.available')}
+                </p>
+                <p className="font-display text-xl font-bold tabular-nums text-brand-900">
+                  {fcfa(child.balance)}
+                </p>
               </div>
             </div>
 
@@ -118,7 +124,7 @@ export default function SuiviPage() {
               <div className="flex flex-wrap gap-1">
                 {child.allergies.map((allergen) => (
                   <Badge key={allergen} tone="rose">
-                    Allergie : {allergen}
+                    ⚠ {allergen}
                   </Badge>
                 ))}
               </div>
