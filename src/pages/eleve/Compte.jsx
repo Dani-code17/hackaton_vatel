@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { fcfa, formatTime } from '../../lib/format'
-import { Alert, Badge, Button, Card, Field, SectionTitle, Select, Spinner } from '../../components/ui'
+import { Alert, Badge, Button, Card, Field, Input, SectionTitle, Select, Spinner } from '../../components/ui'
 
 const QUICK_AMOUNTS = [200, 500, 1000, 2000]
 
@@ -20,6 +20,9 @@ export default function ComptePage() {
   const [method, setMethod] = useState('wave')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState(null)
+  const [allergiesInput, setAllergiesInput] = useState((profile?.allergies ?? []).join(', '))
+  const [diet, setDiet] = useState(profile?.diet ?? '')
+  const [savingProfile, setSavingProfile] = useState(false)
 
   const load = useCallback(async () => {
     if (!user) return
@@ -64,6 +67,30 @@ export default function ComptePage() {
     }
   }
 
+  const saveProfile = async (event) => {
+    event.preventDefault()
+    setSavingProfile(true)
+    setMessage(null)
+    try {
+      const allergies = allergiesInput
+        .split(',')
+        .map((item) => item.trim().toLowerCase())
+        .filter(Boolean)
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ allergies, diet: diet.trim() || null })
+        .eq('id', user.id)
+      if (error) throw error
+      await refresh()
+      setMessage({ tone: 'teal', text: 'Profil alimentaire enregistré.' })
+    } catch (error) {
+      setMessage({ tone: 'rose', text: error.message })
+    } finally {
+      setSavingProfile(false)
+    }
+  }
+
   return (
     <div className="space-y-5">
       <Card className="bg-gradient-to-br from-teal-700 to-teal-600 text-white">
@@ -85,6 +112,29 @@ export default function ComptePage() {
       </Card>
 
       {message ? <Alert tone={message.tone}>{message.text}</Alert> : null}
+
+      <Card>
+        <SectionTitle>Mon profil alimentaire</SectionTitle>
+        <form onSubmit={saveProfile} className="space-y-3">
+          <Field label="Allergies" hint="séparées par des virgules — elles déclenchent une alerte au comptoir">
+            <Input
+              value={allergiesInput}
+              onChange={(event) => setAllergiesInput(event.target.value)}
+              placeholder="arachide, poisson"
+            />
+          </Field>
+          <Field label="Régime particulier">
+            <Input
+              value={diet}
+              onChange={(event) => setDiet(event.target.value)}
+              placeholder="sans porc, végétarien…"
+            />
+          </Field>
+          <Button type="submit" variant="secondary" className="w-full" disabled={savingProfile}>
+            {savingProfile ? 'Enregistrement…' : 'Enregistrer mon profil'}
+          </Button>
+        </form>
+      </Card>
 
       <Card>
         <SectionTitle>Recharger mon compte</SectionTitle>

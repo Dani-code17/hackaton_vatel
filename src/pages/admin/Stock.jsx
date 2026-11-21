@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { formatDay, todayISO } from '../../lib/format'
+import { downloadCsv, formatDay, todayISO } from '../../lib/format'
 import { Alert, Badge, Button, Card, Empty, Field, Input, SectionTitle, Select, Spinner, Stat } from '../../components/ui'
 
 export default function StockPage() {
@@ -245,7 +245,30 @@ export default function StockPage() {
       </div>
 
       <Card>
-        <SectionTitle>État du stock</SectionTitle>
+        <SectionTitle
+          action={
+            <Button
+              variant="ghost"
+              className="text-xs"
+              onClick={() =>
+                downloadCsv(`inventaire-vivres-${today}.csv`, [
+                  ['Article', 'Unite', 'Stock', 'Seuil', 'Ration par personne'],
+                  ...supplies.map((item) => [
+                    item.name,
+                    item.unit,
+                    item.stock,
+                    item.min_stock,
+                    item.qty_per_person,
+                  ]),
+                ])
+              }
+            >
+              ⤓ Export CSV
+            </Button>
+          }
+        >
+          État du stock
+        </SectionTitle>
         <ul className="grid gap-2 sm:grid-cols-2">
           {supplies.map((item) => {
             const low = Number(item.stock) <= Number(item.min_stock)

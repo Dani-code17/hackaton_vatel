@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { fcfa, formatDay, todayISO } from '../../lib/format'
+import { downloadCsv, fcfa, formatDay, todayISO } from '../../lib/format'
 import { Alert, Badge, Button, Card, Field, Input, SectionTitle, Spinner } from '../../components/ui'
 
 export default function ComptabilitePage() {
@@ -72,6 +72,21 @@ export default function ComptabilitePage() {
 
   if (loading) return <Spinner />
 
+  const exportJournal = () => {
+    downloadCsv(`cahier-gestion-${todayISO()}.csv`, [
+      ['Date', 'Servis', 'Recette', 'Versements', 'Salaire cantiniere', 'Fonds local', 'Signature'],
+      ...rows.map((row) => [
+        row.service_date,
+        row.served_count,
+        row.revenue,
+        row.versements,
+        row.cantiniere_salary,
+        row.local_fund,
+        row.signed_at ? 'Signé' : 'En attente',
+      ]),
+    ])
+  }
+
   const totals = rows.reduce(
     (acc, row) => ({
       revenue: acc.revenue + row.revenue,
@@ -127,7 +142,15 @@ export default function ComptabilitePage() {
         </Card>
 
         <Card className="overflow-x-auto">
-          <SectionTitle>Cahier de gestion journalier</SectionTitle>
+          <SectionTitle
+            action={
+              <Button variant="ghost" className="text-xs" onClick={exportJournal}>
+                ⤓ Export CSV
+              </Button>
+            }
+          >
+            Cahier de gestion journalier
+          </SectionTitle>
           <table className="w-full min-w-[640px] text-left text-xs">
             <thead className="text-[10px] uppercase tracking-wide text-slate-500">
               <tr>

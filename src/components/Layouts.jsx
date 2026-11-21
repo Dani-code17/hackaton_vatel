@@ -51,7 +51,7 @@ export function MobileShell({ nav, title }) {
         </div>
       </header>
 
-      <main className="flex-1 px-4 py-4 pb-24">
+      <main className="flex-1 px-4 py-4 pb-28">
         <Outlet />
       </main>
 

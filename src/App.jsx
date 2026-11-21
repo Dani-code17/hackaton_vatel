@@ -14,6 +14,7 @@ import CommandesPage from './pages/admin/Commandes'
 import StockPage from './pages/admin/Stock'
 import ComptabilitePage from './pages/admin/Comptabilite'
 import HygienePage from './pages/admin/Hygiene'
+import MaterielPage from './pages/admin/Materiel'
 import EcolePage from './pages/admin/Ecole'
 import SupervisionPage from './pages/dcs/Supervision'
 
@@ -33,6 +34,7 @@ const ADMIN_TABS = [
   { to: '/admin/menus', label: 'Menus', icon: '📋' },
   { to: '/admin/commandes', label: 'Commandes', icon: '🧾' },
   { to: '/admin/stock', label: 'Stock & rations', icon: '📦' },
+  { to: '/admin/materiel', label: 'Matériel', icon: '🍳' },
   { to: '/admin/comptabilite', label: 'Comptabilité', icon: '💰' },
   { to: '/admin/hygiene', label: 'Hygiène', icon: '🧼' },
   { to: '/admin/ecole', label: 'École', icon: '🏫' },
@@ -122,6 +124,7 @@ export default function App() {
             <Route path="menus" element={<MenusPage />} />
             <Route path="commandes" element={<CommandesPage />} />
             <Route path="stock" element={<StockPage />} />
+            <Route path="materiel" element={<MaterielPage />} />
             <Route path="comptabilite" element={<ComptabilitePage />} />
             <Route path="hygiene" element={<HygienePage />} />
             <Route path="ecole" element={<EcolePage />} />

@@ -53,3 +53,14 @@ export const ROLE_HOME = {
 }
 
 export const isStaff = (role) => ['gerant', 'directeur', 'conseiller_dcs'].includes(role)
+
+export const downloadCsv = (filename, rows) => {
+  const content = rows.map((row) => row.map((cell) => `${cell ?? ''}`).join(';')).join('\n')
+  const blob = new Blob([`\uFEFF${content}`], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
+}
