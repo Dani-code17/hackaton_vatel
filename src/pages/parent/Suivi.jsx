@@ -2,9 +2,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { fcfa, formatDay, todayISO } from '../../lib/format'
+import { useLanguage } from '../../i18n/language'
 import { Alert, Badge, Button, Card, Empty, Field, Input, SectionTitle, Select, Spinner } from '../../components/ui'
 
 export default function SuiviPage() {
+  const { t } = useLanguage()
   const { user, refresh } = useAuth()
   const [children, setChildren] = useState([])
   const [reservations, setReservations] = useState([])
@@ -77,7 +79,7 @@ export default function SuiviPage() {
   if (children.length === 0) {
     return (
       <Empty
-        title="Aucun enfant rattaché"
+        title={t('parent.empty')}
         description="Le gérant doit rattacher votre compte à celui de votre enfant."
       />
     )
@@ -100,12 +102,12 @@ export default function SuiviPage() {
                 <h3 className="font-semibold text-slate-900">{child.full_name}</h3>
                 <p className="text-xs text-slate-500">
                   {todayReservations.length > 0
-                    ? `${todayReservations.length} repas réservé(s) aujourd'hui`
-                    : "Aucun repas réservé aujourd'hui"}
+                    ? t('parent.mealsToday', { count: todayReservations.length })
+                    : t('parent.noMealToday')}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-semibold uppercase text-slate-400">Solde</p>
+                <p className="text-[10px] font-semibold uppercase text-slate-400">{t('compte.available')}</p>
                 <p className="text-lg font-bold text-brand-900">{fcfa(child.balance)}</p>
               </div>
             </div>
@@ -130,9 +132,9 @@ export default function SuiviPage() {
       })}
 
       <Card>
-        <SectionTitle>Recharger le compte cantine</SectionTitle>
+        <SectionTitle>{t('parent.topUp')}</SectionTitle>
         <form onSubmit={recharge} className="space-y-3">
-          <Field label="Enfant">
+          <Field label={t('parent.child')}>
             <Select
               value={form.childId}
               onChange={(event) => setForm({ ...form, childId: event.target.value })}
@@ -146,7 +148,7 @@ export default function SuiviPage() {
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Montant (FCFA)">
+            <Field label={t('compte.amountFcfa')}>
               <Input
                 type="number"
                 min="25"
@@ -155,7 +157,7 @@ export default function SuiviPage() {
                 onChange={(event) => setForm({ ...form, amount: event.target.value })}
               />
             </Field>
-            <Field label="Moyen">
+            <Field label={t('parent.method')}>
               <Select
                 value={form.method}
                 onChange={(event) => setForm({ ...form, method: event.target.value })}
@@ -174,7 +176,7 @@ export default function SuiviPage() {
       </Card>
 
       <section>
-        <SectionTitle>Repas récents</SectionTitle>
+        <SectionTitle>{t('parent.recentMeals')}</SectionTitle>
         {reservations.length === 0 ? (
           <p className="rounded-xl bg-white p-4 text-center text-xs text-slate-500">
             Aucune réservation enregistrée.
@@ -198,7 +200,7 @@ export default function SuiviPage() {
                         : 'teal'
                   }
                 >
-                  {reservation.status}
+                  {t('status.' + reservation.status)}
                 </Badge>
               </li>
             ))}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
+import { useLanguage } from '../../i18n/language'
 import { Alert, Badge, Button, Card, Empty, Field, Input, SectionTitle, Select, Spinner } from '../../components/ui'
 
 const CONDITIONS = {
@@ -10,6 +11,7 @@ const CONDITIONS = {
 }
 
 export default function MaterielPage() {
+  const { t } = useLanguage()
   const { profile } = useAuth()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -90,7 +92,7 @@ export default function MaterielPage() {
     <div className="space-y-5">
       {message ? <Alert tone={message.tone}>{message.text}</Alert> : null}
       {!canWrite ? (
-        <Alert tone="amber">Consultation seule : le gérant met à jour l&apos;inventaire.</Alert>
+        <Alert tone="amber">{t('equipment.readOnly')}</Alert>
       ) : null}
 
       {outOfService.length > 0 ? (
@@ -102,9 +104,9 @@ export default function MaterielPage() {
       <div className="grid gap-4">
         {canWrite ? (
           <Card>
-            <SectionTitle>Ajouter un équipement</SectionTitle>
+            <SectionTitle>{t('equipment.add')}</SectionTitle>
             <form onSubmit={addItem} className="space-y-3">
-              <Field label="Désignation">
+              <Field label={t('equipment.designation')}>
                 <Input
                   value={form.name}
                   onChange={(event) => setForm({ ...form, name: event.target.value })}
@@ -113,7 +115,7 @@ export default function MaterielPage() {
                 />
               </Field>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Quantité">
+                <Field label={t('common.quantity')}>
                   <Input
                     type="number"
                     min="0"
@@ -121,7 +123,7 @@ export default function MaterielPage() {
                     onChange={(event) => setForm({ ...form, quantity: event.target.value })}
                   />
                 </Field>
-                <Field label="État">
+                <Field label={t('equipment.condition')}>
                   <Select
                     value={form.condition}
                     onChange={(event) => setForm({ ...form, condition: event.target.value })}
@@ -132,7 +134,7 @@ export default function MaterielPage() {
                   </Select>
                 </Field>
               </div>
-              <Field label="Observation">
+              <Field label={t('stock.observation')}>
                 <Input
                   value={form.note}
                   onChange={(event) => setForm({ ...form, note: event.target.value })}
@@ -147,9 +149,9 @@ export default function MaterielPage() {
         ) : null}
 
         <Card>
-          <SectionTitle>Inventaire de la cuisine</SectionTitle>
+          <SectionTitle>{t('equipment.inventory')}</SectionTitle>
           {items.length === 0 ? (
-            <Empty title="Inventaire vide" description="Ajoutez le matériel de cuisine." />
+            <Empty title={t('equipment.empty')} description="Ajoutez le matériel de cuisine." />
           ) : (
             <ul className="divide-y divide-slate-100">
               {items.map((item) => {

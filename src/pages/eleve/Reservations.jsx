@@ -1,18 +1,22 @@
 import { useCallback, useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/toast'
+import { useLanguage } from '../../i18n/language'
 import { supabase } from '../../lib/supabase'
 import { fcfa, formatDay } from '../../lib/format'
 import { Alert, Badge, Card, Icon, Spinner } from '../../components/ui'
 
 const STATUS = {
-  reservee: { tone: 'teal', label: 'Réservé' },
-  servie: { tone: 'slate', label: 'Servi' },
-  annulee: { tone: 'rose', label: 'Annulé' },
+  reservee: { tone: 'teal', labelKey: 'status.reservee' },
+  servie: { tone: 'slate', labelKey: 'status.servie' },
+  annulee: { tone: 'rose', labelKey: 'status.annulee' },
 }
 
 export default function ReservationsPage() {
   const { user, profile, refresh } = useAuth()
+  const { t } = useLanguage()
+  const toast = useToast()
   const [rows, setRows] = useState([])
   const [ratings, setRatings] = useState({})
   const [loading, setLoading] = useState(true)
@@ -55,7 +59,7 @@ export default function ReservationsPage() {
       if (error) throw error
       await refresh()
       await load()
-      setMessage({ tone: 'teal', text: 'Réservation annulée, solde recrédité.' })
+      toast.success(t('pass.cancelledToast'))
     } catch (error) {
       setMessage({ tone: 'rose', text: error.message })
     } finally {
@@ -70,7 +74,7 @@ export default function ReservationsPage() {
         .upsert({ meal_id: mealId, user_id: user.id, stars }, { onConflict: 'meal_id,user_id' })
       if (error) throw error
       setRatings((current) => ({ ...current, [mealId]: stars }))
-      setMessage({ tone: 'teal', text: 'Merci pour votre note !' })
+      toast.success(t('pass.ratedToast'))
     } catch (error) {
       setMessage({ tone: 'rose', text: error.message })
     }
@@ -89,8 +93,8 @@ export default function ReservationsPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="font-display text-2xl font-bold leading-tight text-brand-900">Pass repas</h1>
-        <p className="mt-1 text-xs text-slate-500">Présentez le QR code au comptoir</p>
+        <h1 className="font-display text-2xl font-bold leading-tight text-brand-900">{t('pass.title')}</h1>
+        <p className="mt-1 text-xs text-slate-500">{t('pass.subtitle')}</p>
       </div>
 
       {message ? <Alert tone={message.tone}>{message.text}</Alert> : null}
@@ -104,13 +108,13 @@ export default function ReservationsPage() {
               </span>
               <div>
                 <p className="font-display text-[10px] font-bold uppercase tracking-[0.16em] text-brand-200">
-                  Pass cantine
+                  {t('pass.badge')}
                 </p>
                 <p className="font-display text-[13px] font-bold uppercase tracking-[0.1em]">VIP</p>
               </div>
             </div>
             <Badge tone="success">
-              <Icon name="check_circle" className="text-[12px]" /> Validé
+              <Icon name="check_circle" className="text-[12px]" /> {t('pass.valid')}
             </Badge>
           </div>
 
@@ -120,7 +124,7 @@ export default function ReservationsPage() {
 
           <div className="mx-4 mt-3 rounded-xl bg-white/10 p-3 ring-1 ring-white/10">
             <p className="font-display text-[9px] font-bold uppercase tracking-[0.14em] text-brand-200">
-              Réservation midi · formule
+              {t('pass.reservation', { slot: t('menu.service') })}
             </p>
             <p className="mt-1 font-display text-[15px] font-bold leading-snug">
               {active.meal?.name}
@@ -130,7 +134,7 @@ export default function ReservationsPage() {
 
           {profile?.allergies?.length ? (
             <div className="mx-4 mt-2 rounded-lg bg-coral-500/20 px-3 py-2 text-[11px] text-white ring-1 ring-coral-300/40">
-              ⚠ Allergie déclarée : {profile.allergies.join(', ')} — cuisine informée
+              ⚠ {t('pass.allergyDeclared', { list: profile.allergies.join(', ') })}
             </div>
           ) : null}
 
@@ -167,28 +171,28 @@ export default function ReservationsPage() {
               onClick={() => cancel(active)}
               className="font-display text-[11px] font-semibold text-brand-200 underline underline-offset-2 hover:text-white"
             >
-              {busyId === active.id ? 'Annulation…' : 'Annuler'}
+              {busyId === active.id ? t('common.loading') : t('pass.cancel')}
             </button>
           </div>
         </div>
       ) : (
         <Card className="p-6 text-center">
           <Icon name="qr_code_2" className="text-[40px] text-slate-300" />
-          <p className="mt-2 font-display text-sm font-semibold text-slate-700">Aucun pass actif</p>
+          <p className="mt-2 font-display text-sm font-semibold text-slate-700">{t('pass.empty')}</p>
           <p className="mt-1 text-xs text-slate-500">
-            Réservez un repas depuis la carte pour obtenir votre pass QR.
+            {t('pass.emptyHint')}
           </p>
         </Card>
       )}
 
       <section>
         <h2 className="mb-2 font-display text-[12px] font-bold uppercase tracking-[0.1em] text-brand-900">
-          Historique des repas
+          {t('pass.history')}
         </h2>
 
         {history.length === 0 ? (
           <p className="rounded-xl border border-slate-200 bg-white p-4 text-center text-xs text-slate-500">
-            Aucun repas consommé pour le moment.
+            {t('pass.emptyHistory')}
           </p>
         ) : (
           <ul className="space-y-2">
@@ -207,13 +211,13 @@ export default function ReservationsPage() {
                           {fcfa(reservation.meal?.price)}
                         </p>
                       </div>
-                      <Badge tone={status.tone}>{status.label}</Badge>
+                      <Badge tone={status.tone}>{t(status.labelKey)}</Badge>
                     </div>
 
                     {reservation.status === 'servie' && reservation.meal?.id ? (
                       <div className="mt-2 flex items-center justify-between rounded-lg bg-slate-50 px-3 py-1.5">
                         <span className="font-display text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                          Notez ce plat
+                          {t('pass.rate')}
                         </span>
                         <div className="flex">
                           {[1, 2, 3, 4, 5].map((star) => (

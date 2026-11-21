@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/toast'
 import { supabase } from '../../lib/supabase'
 import { addDays, cx, fcfa, formatDay, todayISO } from '../../lib/format'
+import { allergyConflicts } from '../../lib/business'
+import { useLanguage } from '../../i18n/language'
+import SmartChefCard from '../../components/SmartChefCard'
 import { Alert, Badge, Button, Card, Empty, Icon, Spinner } from '../../components/ui'
 
 const CACHE_KEY = 'cantine:menus'
@@ -26,6 +30,8 @@ function writeCache(meals) {
 
 export default function MenuPage() {
   const { user, profile, refresh } = useAuth()
+  const { t, lang } = useLanguage()
+  const toast = useToast()
   const [meals, setMeals] = useState([])
   const [reservations, setReservations] = useState([])
   const [loading, setLoading] = useState(true)
@@ -80,7 +86,11 @@ export default function MenuPage() {
     [reservations],
   )
 
-  const myAllergies = (profile?.allergies ?? []).map((a) => a.toLowerCase())
+  const myAllergies = useMemo(
+    () => (profile?.allergies ?? []).map((a) => a.toLowerCase()),
+    [profile?.allergies],
+  )
+  const openCount = reservations.filter((r) => r.status === 'reservee').length
 
   const filtered = useMemo(() => {
     if (filter === 'today') return meals.filter((meal) => meal.service_date === today)
@@ -105,9 +115,10 @@ export default function MenuPage() {
       if (error) throw error
       await refresh()
       await load()
-      setMessage({ tone: 'teal', text: `Repas réservé : ${meal.name}` })
+      toast.success(t('menu.reservedToast', { name: meal.name }))
     } catch (error) {
       setMessage({ tone: 'rose', text: error.message })
+      toast.error(error.message)
     } finally {
       setBusyId(null)
     }
@@ -122,12 +133,12 @@ export default function MenuPage() {
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-display text-[9px] font-bold uppercase tracking-[0.16em] text-coral-500">
-            Session étudiante active
+            {t('menu.sessionActive')}
           </p>
           <h1 className="mt-1 font-display text-2xl font-bold leading-tight text-brand-900">
-            Bonjour, {firstName}
+            {t('menu.greeting', { name: firstName })}
           </h1>
-          <p className="mt-1 text-xs text-slate-500">Carte du jour · Campus Abidjan</p>
+          <p className="mt-1 text-xs text-slate-500">{t('menu.subtitle')}</p>
         </div>
         <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-100 font-display text-sm font-bold text-brand-900 ring-1 ring-brand-200">
           {(profile?.full_name ?? 'V')
@@ -142,16 +153,15 @@ export default function MenuPage() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="font-display text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500">
-              Solde cantine & services
+              {t('menu.balance')}
             </p>
             <p className="mt-1 font-display text-3xl font-bold tracking-tight text-brand-900">
               {fcfa(profile?.balance)}
             </p>
-            <p className="mt-0.5 text-[11px] text-slate-400">Recharge instantanée sécurisée</p>
+            <p className="mt-0.5 text-[11px] text-slate-400">{t('menu.secureTopUp')}</p>
           </div>
           <Badge tone="teal">
-            {reservations.filter((r) => r.status === 'reservee').length} repas restant
-            {reservations.filter((r) => r.status === 'reservee').length > 1 ? 's' : ''}
+            {t(openCount > 1 ? 'menu.mealsLeftPlural' : 'menu.mealsLeft', { count: openCount })}
           </Badge>
         </div>
 
@@ -160,13 +170,13 @@ export default function MenuPage() {
             to="/eleve/compte"
             className="flex items-center justify-center gap-2 rounded-lg border border-brand-200 bg-brand-50 py-2 font-display text-[11px] font-semibold text-brand-900"
           >
-            <Icon name="waves" className="text-[16px]" /> Wave
+            <Icon name="waves" className="text-[16px]" /> {t('menu.wave')}
           </Link>
           <Link
             to="/eleve/compte"
             className="flex items-center justify-center gap-2 rounded-lg border border-coral-200 bg-coral-100 py-2 font-display text-[11px] font-semibold text-coral-700"
           >
-            <Icon name="phone_iphone" className="text-[16px]" /> Orange Money
+            <Icon name="phone_iphone" className="text-[16px]" /> {t('menu.orangeMoney')}
           </Link>
         </div>
       </Card>
@@ -174,8 +184,8 @@ export default function MenuPage() {
       {message ? <Alert tone={message.tone}>{message.text}</Alert> : null}
 
       {profile && profile.balance < 50 ? (
-        <Alert tone="amber" title="Solde bas">
-          Il reste {fcfa(profile.balance)}. Rechargez pour réserver les prochains repas.
+        <Alert tone="amber" title={t('menu.lowBalance')}>
+          {t('menu.lowBalanceHint', { amount: fcfa(profile.balance) })}
         </Alert>
       ) : null}
 
@@ -183,18 +193,18 @@ export default function MenuPage() {
         <div className="mb-3 flex items-center justify-between gap-3">
           <h2 className="flex min-w-0 items-center gap-1.5 font-display text-[17px] font-bold leading-tight text-brand-900">
             <Icon name="restaurant" className="shrink-0 text-[18px]" />
-            <span className="truncate">Haute table pédagogique</span>
+            <span className="truncate">{t('menu.title')}</span>
           </h2>
           <span className="shrink-0 whitespace-nowrap font-display text-[10px] font-bold uppercase tracking-[0.08em] text-coral-500">
-            Service midi
+            {t('menu.service')}
           </span>
         </div>
 
         <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
           {[
-            { id: 'all', label: 'Tous les mets' },
-            { id: 'today', label: "Aujourd'hui", dot: true },
-            { id: 'veg', label: 'Végétarien' },
+            { id: 'all', label: t('menu.filterAll') },
+            { id: 'today', label: t('menu.filterToday'), dot: true },
+            { id: 'veg', label: t('menu.filterVeg') },
           ].map((item) => (
             <button
               key={item.id}
@@ -217,11 +227,10 @@ export default function MenuPage() {
       </div>
 
       {grouped.length === 0 ? (
-        <Empty
-          title="Aucun plat publié"
-          description="Le gérant n'a pas encore publié les plats de la semaine."
-        />
+        <Empty title={t('menu.empty')} description={t('menu.emptyHint')} />
       ) : null}
+
+      <SmartChefCard meals={filtered} allergies={profile?.allergies ?? []} balance={profile?.balance} lang={lang} />
 
       {grouped.map(([date, dayMeals]) => (
         <section key={date} className="space-y-3">
@@ -234,7 +243,7 @@ export default function MenuPage() {
 
           {dayMeals.map((meal) => {
             const reserved = reservedIds.has(meal.id)
-            const conflicts = meal.allergens.filter((a) => myAllergies.includes(a.toLowerCase()))
+            const conflicts = allergyConflicts(meal.allergens, myAllergies)
 
             return (
               <Card key={meal.id} className="overflow-hidden">
@@ -243,8 +252,10 @@ export default function MenuPage() {
                     <Icon name="restaurant" className="text-[40px] text-white/25" filled />
                   </div>
                   <div className="absolute right-2 top-2 flex flex-wrap justify-end gap-1">
-                    {meal.vegetarian ? <Badge tone="sky">Végétarien</Badge> : null}
-                    {conflicts.length > 0 ? <Badge tone="rose">⚠ Allergie</Badge> : null}
+                    {meal.vegetarian ? <Badge tone="sky">{t('menu.vegetarian')}</Badge> : null}
+                    {conflicts.length > 0 ? (
+                      <Badge tone="rose">⚠ {t('menu.allergen')}</Badge>
+                    ) : null}
                   </div>
                 </div>
 
@@ -269,7 +280,7 @@ export default function MenuPage() {
                   {conflicts.length > 0 ? (
                     <div className="mt-2">
                       <Alert tone="rose">
-                        Contient {conflicts.join(', ')} — signalé dans votre profil.
+                        {t('menu.allergyWarning', { list: conflicts.join(', ') })}
                       </Alert>
                     </div>
                   ) : null}
@@ -277,7 +288,7 @@ export default function MenuPage() {
                   <div className="mt-3 flex items-center justify-between gap-3">
                     <div>
                       <p className="font-display text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
-                        Tarif étudiant
+                        {t('menu.studentPrice')}
                       </p>
                       <p className="font-display text-lg font-bold tabular-nums text-brand-900">
                         {fcfa(meal.price)}
@@ -286,7 +297,7 @@ export default function MenuPage() {
 
                     {reserved ? (
                       <span className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-brand-50 px-3 font-display text-[12px] font-semibold text-brand-900">
-                        <Icon name="check_circle" className="text-[17px]" /> Réservé
+                        <Icon name="check_circle" className="text-[17px]" /> {t('menu.reserved')}
                       </span>
                     ) : (
                       <Button
@@ -295,10 +306,10 @@ export default function MenuPage() {
                         onClick={() => reserve(meal)}
                       >
                         {busyId === meal.id
-                          ? 'Réservation…'
+                          ? t('common.loading')
                           : profile?.balance < meal.price
-                            ? 'Solde insuffisant'
-                            : 'Réserver & Pass QR'}
+                            ? t('menu.insufficientBalance')
+                            : t('menu.reserve')}
                         {busyId === meal.id ? null : (
                           <Icon name="arrow_forward" className="text-[16px]" />
                         )}

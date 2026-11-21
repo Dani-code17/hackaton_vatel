@@ -4,24 +4,26 @@ import { useAuth } from '../context/AuthContext'
 import { useUniverse } from '../context/UniverseContext'
 import { cx } from '../lib/format'
 import { navFor } from '../lib/universes'
+import { useLanguage } from '../i18n/language'
 import AppSwitcher from './AppSwitcher'
 import { BrandBar, BottomNav, UserChip } from './Layouts'
 import { Icon } from './ui'
 
 const MODULES = [
-  { to: '/admin', label: 'Tableau de bord', icon: 'dashboard', end: true },
-  { to: '/admin/menus', label: 'Menus', icon: 'restaurant_menu' },
-  { to: '/admin/commandes', label: 'Commandes', icon: 'receipt_long' },
-  { to: '/admin/stock', label: 'Stock & rations', icon: 'inventory_2' },
-  { to: '/admin/materiel', label: 'Matériel', icon: 'soup_kitchen' },
-  { to: '/admin/comptabilite', label: 'Comptabilité', icon: 'account_balance' },
-  { to: '/admin/hygiene', label: 'Hygiène', icon: 'clean_hands' },
-  { to: '/admin/ecole', label: 'École & RH', icon: 'school' },
+  { to: '/admin', labelKey: 'modules.dashboard', icon: 'dashboard', end: true },
+  { to: '/admin/menus', labelKey: 'modules.menus', icon: 'restaurant_menu' },
+  { to: '/admin/commandes', labelKey: 'modules.orders', icon: 'receipt_long' },
+  { to: '/admin/stock', labelKey: 'modules.stock', icon: 'inventory_2' },
+  { to: '/admin/materiel', labelKey: 'modules.equipment', icon: 'soup_kitchen' },
+  { to: '/admin/comptabilite', labelKey: 'modules.accounting', icon: 'account_balance' },
+  { to: '/admin/hygiene', labelKey: 'modules.hygiene', icon: 'clean_hands' },
+  { to: '/admin/ecole', labelKey: 'modules.school', icon: 'school' },
 ]
 
 export default function UniverseShell() {
   const { profile } = useAuth()
   const { universe, config } = useUniverse()
+  const { t } = useLanguage()
   const [sheetOpen, setSheetOpen] = useState(false)
 
   const nav = navFor(universe, profile?.role)
@@ -35,7 +37,7 @@ export default function UniverseShell() {
         className="flex w-full flex-col items-center gap-1 pb-2 pt-2.5 font-display text-[10px] font-semibold text-slate-400 transition hover:text-slate-600"
       >
         <Icon name="apps" className="text-[22px]" />
-        <span>Modules</span>
+        <span>{t('common.modules')}</span>
       </button>
     </li>
   ) : null
@@ -67,7 +69,7 @@ export default function UniverseShell() {
                 <p className="font-display text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
                   {config.name}
                 </p>
-                <h2 className="font-display text-lg font-bold text-brand-900">Tous les modules</h2>
+                <h2 className="font-display text-lg font-bold text-brand-900">{t('modules.all')}</h2>
               </div>
               <button
                 type="button"
@@ -94,7 +96,7 @@ export default function UniverseShell() {
                     }
                   >
                     <Icon name={module.icon} className="text-[18px]" />
-                    {module.label}
+                    {t(module.labelKey)}
                   </NavLink>
                 </li>
               ))}

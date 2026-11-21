@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatDay, formatTime, todayISO } from '../../lib/format'
+import { useLanguage } from '../../i18n/language'
 import { Alert, Badge, Button, Card, Empty, Field, Input, SectionTitle, Spinner, Stat } from '../../components/ui'
 
 export default function CommandesPage() {
+  const { t } = useLanguage()
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [token, setToken] = useState('')
@@ -79,7 +81,7 @@ export default function CommandesPage() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">Commandes du jour</h2>
+          <h2 className="text-lg font-bold text-slate-900">{t('orders.title')}</h2>
           <p className="text-xs text-slate-500">{formatDay(today)}</p>
         </div>
         <Badge tone="teal">● Temps réel</Badge>
@@ -88,16 +90,16 @@ export default function CommandesPage() {
       {message ? <Alert tone={message.tone}>{message.text}</Alert> : null}
 
       <div className="grid grid-cols-3 gap-3">
-        <Stat label="Servis" value={summary.served} tone="teal" />
-        <Stat label="En attente" value={summary.waiting} tone="amber" />
-        <Stat label="Recette" value={`${summary.revenue} F`} />
+        <Stat label={t('accounting.served')} value={summary.served} tone="teal" />
+        <Stat label={t('dashboard.waiting')} value={summary.waiting} tone="amber" />
+        <Stat label={t('accounting.revenueShort')} value={`${summary.revenue} F`} />
       </div>
 
       <Card>
-        <SectionTitle>Pointage par pass QR</SectionTitle>
+        <SectionTitle>{t('orders.qrScan')}</SectionTitle>
         <form onSubmit={manualServe} className="flex flex-col gap-2 sm:flex-row sm:items-end">
           <div className="flex-1">
-            <Field label="Code du pass" hint="scannez ou saisissez le code affiché sur le téléphone de l'élève">
+            <Field label={t('orders.passCode')} hint="scannez ou saisissez le code affiché sur le téléphone de l'élève">
               <Input
                 value={token}
                 onChange={(event) => setToken(event.target.value)}
@@ -112,10 +114,10 @@ export default function CommandesPage() {
       </Card>
 
       <Card>
-        <SectionTitle>File d&apos;attente</SectionTitle>
+        <SectionTitle>{t('orders.queue')}</SectionTitle>
         {rows.length === 0 ? (
           <Empty
-            title="Aucune réservation aujourd'hui"
+            title={t('dashboard.noReservation')}
             description="Les réservations des élèves apparaîtront ici en temps réel."
           />
         ) : (
@@ -142,9 +144,9 @@ export default function CommandesPage() {
                 </div>
 
                 {row.status === 'servie' ? (
-                  <Badge tone="slate">Servi</Badge>
+                  <Badge tone="slate">{t('status.servie')}</Badge>
                 ) : row.status === 'annulee' ? (
-                  <Badge tone="rose">Annulé</Badge>
+                  <Badge tone="rose">{t('status.annulee')}</Badge>
                 ) : (
                   <Button
                     className="text-xs"

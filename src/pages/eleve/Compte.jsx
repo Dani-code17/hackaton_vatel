@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/toast'
+import { useLanguage } from '../../i18n/language'
 import { supabase } from '../../lib/supabase'
 import { cx, fcfa, formatTime } from '../../lib/format'
 import {
@@ -22,13 +24,15 @@ const METHODS = [
 ]
 
 const KIND_LABELS = {
-  recharge: 'Recharge',
-  debit_repas: 'Repas réservé',
-  remboursement: 'Remboursement',
+  recharge: 'compte.recharge',
+  debit_repas: 'compte.payment',
+  remboursement: 'compte.refund',
 }
 
 export default function ComptePage() {
   const { user, profile, refresh } = useAuth()
+  const { t, locale } = useLanguage()
+  const toast = useToast()
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
   const [amount, setAmount] = useState(1500)
@@ -71,10 +75,12 @@ export default function ComptePage() {
       if (error) throw error
       await refresh()
       await load()
-      setMessage({
-        tone: 'teal',
-        text: `Recharge de ${fcfa(amount)} confirmée via ${METHODS.find((m) => m.value === method)?.label}.`,
-      })
+      toast.success(
+        t('compte.topUpToast', {
+          amount: fcfa(amount),
+          method: METHODS.find((m) => m.value === method)?.label,
+        }),
+      )
     } catch (error) {
       setMessage({ tone: 'rose', text: error.message })
     } finally {
@@ -98,7 +104,7 @@ export default function ComptePage() {
         .eq('id', user.id)
       if (error) throw error
       await refresh()
-      setMessage({ tone: 'teal', text: 'Profil alimentaire enregistré.' })
+      toast.success(t('compte.profileToast'))
     } catch (error) {
       setMessage({ tone: 'rose', text: error.message })
     } finally {
@@ -109,8 +115,8 @@ export default function ComptePage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="font-display text-2xl font-bold leading-tight text-brand-900">Solde & Wave</h1>
-        <p className="mt-1 text-xs text-slate-500">Portefeuille cantine et rechargement instantané</p>
+        <h1 className="font-display text-2xl font-bold leading-tight text-brand-900">{t('nav.wallet')}</h1>
+        <p className="mt-1 text-xs text-slate-500">{t('compte.wallet')}</p>
       </div>
 
       {message ? <Alert tone={message.tone}>{message.text}</Alert> : null}
@@ -119,7 +125,7 @@ export default function ComptePage() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="font-display text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500">
-              Solde cantine & services
+              {t('menu.balance')}
             </p>
             <p className="mt-1 font-display text-3xl font-bold tabular-nums text-brand-900">
               {fcfa(profile?.balance)}
@@ -143,7 +149,7 @@ export default function ComptePage() {
       </Card>
 
       <Card className="p-4">
-        <SectionTitle>Recharger le compte</SectionTitle>
+        <SectionTitle>{t('compte.topUp')}</SectionTitle>
         <form onSubmit={recharge} className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             {QUICK_AMOUNTS.map((value) => (
@@ -167,13 +173,15 @@ export default function ComptePage() {
                     Number(amount) === value ? 'text-brand-200' : 'text-slate-400',
                   )}
                 >
-                  {value <= 500 ? 'Collation' : `${Math.floor(value / 1500) || 1} repas`}
+                  {value <= 500
+                    ? t('compte.snack')
+                    : t('compte.mealsCount', { count: Math.floor(value / 1500) || 1 })}
                 </span>
               </button>
             ))}
           </div>
 
-          <Field label="Montant (FCFA)">
+          <Field label={t('compte.amountFcfa')}>
             <Input
               type="number"
               min="25"
@@ -185,7 +193,7 @@ export default function ComptePage() {
 
           <div>
             <p className="mb-1.5 font-display text-[10px] font-bold uppercase tracking-[0.09em] text-slate-500">
-              Moyen de paiement
+              {t('compte.method')}
             </p>
             <div className="grid grid-cols-3 gap-2">
               {METHODS.map((item) => (
@@ -209,23 +217,23 @@ export default function ComptePage() {
 
           <Button type="submit" className="w-full" disabled={busy}>
             <Icon name="bolt" className="text-[17px]" />
-            {busy ? 'Traitement…' : `Recharger ${fcfa(amount)}`}
+            {busy ? t('common.loading') : t('compte.topUpAmount', { amount: fcfa(amount) })}
           </Button>
-          <p className="text-center text-[10px] text-slate-400">Paiement simulé pour la démonstration</p>
+          <p className="text-center text-[10px] text-slate-400">{t('compte.simulated')}</p>
         </form>
       </Card>
 
       <Card className="p-4">
-        <SectionTitle>Mon profil alimentaire</SectionTitle>
+        <SectionTitle>{t('compte.profile')}</SectionTitle>
         <form onSubmit={saveProfile} className="space-y-3">
-          <Field label="Allergies" hint="séparées par des virgules — alerte au comptoir">
+          <Field label={t('compte.allergies')} hint={t('compte.allergiesHint')}>
             <Input
               value={allergiesInput}
               onChange={(event) => setAllergiesInput(event.target.value)}
               placeholder="arachide, poisson"
             />
           </Field>
-          <Field label="Régime particulier">
+          <Field label={t('compte.diet')}>
             <Input
               value={diet}
               onChange={(event) => setDiet(event.target.value)}
@@ -233,18 +241,18 @@ export default function ComptePage() {
             />
           </Field>
           <Button type="submit" variant="secondary" className="w-full" disabled={savingProfile}>
-            {savingProfile ? 'Enregistrement…' : 'Enregistrer mon profil'}
+            {savingProfile ? t('common.loading') : t('compte.saveProfile')}
           </Button>
         </form>
       </Card>
 
       <section>
-        <SectionTitle>Historique des mouvements</SectionTitle>
+        <SectionTitle>{t('compte.history')}</SectionTitle>
         {loading ? (
           <Spinner />
         ) : transactions.length === 0 ? (
           <p className="rounded-xl border border-slate-200 bg-white p-4 text-center text-xs text-slate-500">
-            Aucun mouvement pour le moment.
+            {t('compte.noMovement')}
           </p>
         ) : (
           <ul className="space-y-2">
@@ -269,10 +277,10 @@ export default function ComptePage() {
                   </span>
                   <div className="min-w-0">
                     <p className="truncate font-display text-[12px] font-semibold text-slate-800">
-                      {KIND_LABELS[transaction.kind] ?? transaction.kind}
+                      {KIND_LABELS[transaction.kind] ? t(KIND_LABELS[transaction.kind]) : transaction.kind}
                     </p>
                     <p className="text-[10px] text-slate-400">
-                      {new Date(transaction.created_at).toLocaleDateString('fr-FR')} ·{' '}
+                      {new Date(transaction.created_at).toLocaleDateString(locale)} ·{' '}
                       {formatTime(transaction.created_at)}
                       {transaction.reference ? ` · ${transaction.reference}` : ''}
                     </p>

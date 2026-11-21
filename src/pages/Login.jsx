@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { ROLE_HOME, ROLE_LABELS } from '../lib/format'
+import { ROLE_HOME, ROLE_LABEL_KEYS } from '../lib/format'
+import { useLanguage } from '../i18n/language'
+import LanguageSwitch from '../components/LanguageSwitch'
 import { Alert, Button, Card, Field, Icon, Input } from '../components/ui'
 
 const DEMO_ACCOUNTS = [
@@ -14,6 +16,7 @@ const DEMO_ACCOUNTS = [
 
 export default function Login() {
   const { session, profile, signIn } = useAuth()
+  const { t } = useLanguage()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('Demo1234!')
   const [error, setError] = useState(null)
@@ -44,15 +47,18 @@ export default function Login() {
 
   return (
     <div className="min-h-dvh bg-brand-900">
-      <div className="px-5 pb-6 pt-10 text-center">
+      <div className="flex justify-end px-5 pt-4">
+        <LanguageSwitch />
+      </div>
+      <div className="px-5 pb-6 pt-2 text-center">
         <div className="mx-auto w-40 rounded-2xl bg-white p-3 shadow-[0_16px_36px_rgba(0,0,0,0.25)]">
           <img src="/vatel-logo.svg" alt="Vatel" className="mx-auto h-auto w-full" />
         </div>
         <p className="mt-4 font-display text-[10px] font-bold uppercase tracking-[0.28em] text-brand-200">
-          Cantine Campus Abidjan
+          {t('login.eyebrow')}
         </p>
         <h1 className="mt-1 font-display text-xl font-bold text-white">
-          L&apos;excellence hôtelière au quotidien
+          {t('login.tagline')}
         </h1>
       </div>
 
@@ -61,12 +67,12 @@ export default function Login() {
           <form onSubmit={submit} className="space-y-3">
             <div>
               <p className="font-display text-[10px] font-bold uppercase tracking-[0.14em] text-coral-500">
-                Accès sécurisé
+                {t('login.subtitle')}
               </p>
-              <h2 className="font-display text-lg font-bold text-brand-900">Connexion</h2>
+              <h2 className="font-display text-lg font-bold text-brand-900">{t('login.title')}</h2>
             </div>
 
-            <Field label="Adresse e-mail">
+            <Field label={t('login.email')}>
               <Input
                 type="email"
                 autoComplete="username"
@@ -77,7 +83,7 @@ export default function Login() {
               />
             </Field>
 
-            <Field label="Mot de passe">
+            <Field label={t('login.password')}>
               <Input
                 type="password"
                 autoComplete="current-password"
@@ -90,14 +96,14 @@ export default function Login() {
             {error ? <Alert tone="rose">{error}</Alert> : null}
 
             <Button type="submit" className="w-full" disabled={busy}>
-              {busy ? 'Connexion…' : 'Se connecter'}
+              {busy ? t('common.loading') : t('login.submit')}
               {busy ? null : <Icon name="arrow_forward" className="text-[17px]" />}
             </Button>
           </form>
 
           <div className="mt-4 border-t border-slate-100 pt-3">
             <p className="mb-2 font-display text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">
-              Comptes de démonstration · Demo1234!
+              {t('login.demo')} · Demo1234!
             </p>
             <div className="grid grid-cols-2 gap-2">
               {DEMO_ACCOUNTS.map((account) => (
@@ -108,7 +114,7 @@ export default function Login() {
                   className="rounded-lg border border-slate-200 px-2.5 py-2 text-left transition hover:border-brand-200 hover:bg-brand-50"
                 >
                   <span className="block font-display text-[11px] font-semibold text-brand-900">
-                    {ROLE_LABELS[account.role]}
+                    {t(ROLE_LABEL_KEYS[account.role])}
                   </span>
                   <span className="block truncate text-[10px] text-slate-400">{account.email}</span>
                 </button>
@@ -118,7 +124,7 @@ export default function Login() {
         </Card>
 
         <p className="mt-4 text-center text-[10px] uppercase tracking-[0.14em] text-slate-400">
-          Hackathon Vatel 2026 · Démonstration
+          {t('login.footer')}
         </p>
       </div>
     </div>

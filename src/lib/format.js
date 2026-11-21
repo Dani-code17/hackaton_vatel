@@ -2,6 +2,13 @@ export const cx = (...classes) => classes.filter(Boolean).join(' ')
 
 const money = new Intl.NumberFormat('fr-FR')
 
+let formatLocale = 'fr-FR'
+
+/** La locale des dates suit la langue choisie dans l'en-tête (FR / EN). */
+export const setFormatLocale = (locale) => {
+  formatLocale = locale || 'fr-FR'
+}
+
 export const fcfa = (value) => `${money.format(Number(value ?? 0))} F`
 
 export const toISODate = (date) => {
@@ -19,21 +26,21 @@ export const addDays = (value, days) => {
 }
 
 export const formatDay = (value) =>
-  new Date(`${value}T12:00:00`).toLocaleDateString('fr-FR', {
+  new Date(`${value}T12:00:00`).toLocaleDateString(formatLocale, {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
   })
 
 export const formatDayShort = (value) =>
-  new Date(`${value}T12:00:00`).toLocaleDateString('fr-FR', {
+  new Date(`${value}T12:00:00`).toLocaleDateString(formatLocale, {
     weekday: 'short',
     day: 'numeric',
   })
 
 export const formatTime = (value) =>
   value
-    ? new Date(value).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+    ? new Date(value).toLocaleTimeString(formatLocale, { hour: '2-digit', minute: '2-digit' })
     : ''
 
 export const ROLE_LABELS = {
@@ -42,6 +49,14 @@ export const ROLE_LABELS = {
   gerant: 'Gérant',
   directeur: 'Directeur',
   conseiller_dcs: 'Conseiller DCS',
+}
+
+export const ROLE_LABEL_KEYS = {
+  eleve: 'role.eleve',
+  parent: 'role.parent',
+  gerant: 'role.gerant',
+  directeur: 'role.directeur',
+  conseiller_dcs: 'role.conseiller_dcs',
 }
 
 export const ROLE_HOME = {

@@ -2,9 +2,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { fcfa, formatTime } from '../../lib/format'
+import { useLanguage } from '../../i18n/language'
 import { Badge, Empty, Spinner } from '../../components/ui'
 
 export default function HistoriquePage() {
+  const { t } = useLanguage()
   const { user } = useAuth()
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
@@ -41,7 +43,7 @@ export default function HistoriquePage() {
   if (loading) return <Spinner />
 
   if (rows.length === 0) {
-    return <Empty title="Aucun mouvement" description="Les recharges et repas apparaîtront ici." />
+    return <Empty title={t('parent.emptyHistory')} description="Les recharges et repas apparaîtront ici." />
   }
 
   return (

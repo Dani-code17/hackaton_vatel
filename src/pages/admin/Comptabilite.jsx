@@ -3,10 +3,14 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { downloadCsv, fcfa, formatDay, todayISO } from '../../lib/format'
 import { modelConfig } from '../../lib/models'
+import { useToast } from '../../context/toast'
+import { useLanguage } from '../../i18n/language'
 import { Alert, Badge, Button, Card, Field, Input, SectionTitle, Spinner } from '../../components/ui'
 
 export default function ComptabilitePage() {
   const { profile } = useAuth()
+  const { t } = useLanguage()
+  const toast = useToast()
   const [school, setSchool] = useState(null)
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
@@ -58,7 +62,7 @@ export default function ComptabilitePage() {
       )
       if (error) throw error
       await load()
-      setMessage({ tone: 'teal', text: 'Journal mis à jour : les montants sont recalculés.' })
+      toast.success(t('compta.saved'))
     } catch (error) {
       setMessage({ tone: 'rose', text: error.message })
     } finally {
@@ -73,7 +77,7 @@ export default function ComptabilitePage() {
       const { error } = await supabase.rpc('sign_daily_accounting', { p_id: row.id })
       if (error) throw error
       await load()
-      setMessage({ tone: 'teal', text: 'Document signé électroniquement.' })
+      toast.success(t('toast.signed'))
     } catch (error) {
       setMessage({ tone: 'rose', text: error.message })
     } finally {
@@ -120,15 +124,15 @@ export default function ComptabilitePage() {
       <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
         <p className="text-sm font-semibold text-slate-800">{school?.name}</p>
         <p className="text-xs text-slate-500">
-          {config.label} · {config.priceNote}
+          {t(config.label)} · {t(config.priceNote)}
         </p>
       </div>
 
       <div className="grid gap-4">
         <Card>
-          <SectionTitle>Saisie du jour</SectionTitle>
+          <SectionTitle>{t('compta.dailyEntry')}</SectionTitle>
           <form onSubmit={saveEntry} className="space-y-3">
-            <Field label="Date">
+            <Field label={t('common.date')}>
               <Input
                 type="date"
                 value={entry.service_date}
@@ -137,7 +141,7 @@ export default function ComptabilitePage() {
                 required
               />
             </Field>
-            <Field label="Rationnaires servis" hint={config.priceNote}>
+            <Field label={t('accounting.served')} hint={t(config.priceNote)}>
               <Input
                 type="number"
                 min="0"
@@ -148,12 +152,12 @@ export default function ComptabilitePage() {
               />
             </Field>
             <Button type="submit" className="w-full" disabled={busy || !canWrite}>
-              {busy ? 'Calcul…' : 'Enregistrer et calculer'}
+              {busy ? t('common.loading') : t('compta.saveCalc')}
             </Button>
           </form>
 
           <div className="mt-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-600">
-            <p className="font-semibold text-slate-700">Formules appliquées</p>
+            <p className="font-semibold text-slate-700">{t('compta.formulas')}</p>
             <ul className="mt-1 space-y-0.5">
               <li>{config.finance.revenue} = rationnaires × {school?.meal_price ?? 0} F</li>
               {config.finance.versements ? (
@@ -174,11 +178,11 @@ export default function ComptabilitePage() {
           <SectionTitle
             action={
               <Button variant="ghost" className="text-xs" onClick={exportJournal}>
-                ⤓ Export CSV
+                ⤓ {t('common.export')}
               </Button>
             }
           >
-            Cahier de gestion journalier
+            {t('compta.ledger')}
           </SectionTitle>
           <table className="w-full min-w-[640px] text-left text-xs">
             <thead className="text-[10px] uppercase tracking-wide text-slate-500">
@@ -223,17 +227,17 @@ export default function ComptabilitePage() {
                   <td className="py-2 text-right font-semibold text-brand-900">{fcfa(row.local_fund)}</td>
                   <td className="py-2 text-right">
                     {row.signed_at ? (
-                      <Badge tone="teal">Signé</Badge>
+                      <Badge tone="teal">{t('common.signed')}</Badge>
                     ) : canSign ? (
                       <Button
                         variant="secondary"
                         className="px-2 py-1 text-[11px]"
                         onClick={() => sign(row)}
                       >
-                        Signer
+                        {t('common.sign')}
                       </Button>
                     ) : (
-                      <Badge tone="amber">À signer</Badge>
+                      <Badge tone="amber">{t('common.notSigned')}</Badge>
                     )}
                   </td>
                 </tr>

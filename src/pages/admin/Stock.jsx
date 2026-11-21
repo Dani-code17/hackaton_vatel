@@ -3,10 +3,14 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { downloadCsv, formatDay, todayISO } from '../../lib/format'
 import { modelConfig, sourcesFor } from '../../lib/models'
+import { useToast } from '../../context/toast'
+import { useLanguage } from '../../i18n/language'
 import { Alert, Badge, Button, Card, Empty, Field, Input, SectionTitle, Select, Spinner, Stat } from '../../components/ui'
 
 export default function StockPage() {
   const { profile } = useAuth()
+  const { t } = useLanguage()
+  const toast = useToast()
   const [supplies, setSupplies] = useState([])
   const [movements, setMovements] = useState([])
   const [school, setSchool] = useState(null)
@@ -94,10 +98,7 @@ export default function StockPage() {
       })
       if (error) throw error
       await load()
-      setMessage({
-        tone: 'teal',
-        text: `Stock décrémenté pour ${data.rationnaires} rationnaires (${data.lines.length} articles).`,
-      })
+      toast.success(t('toast.stockOut', { count: data.rationnaires }))
     } catch (error) {
       setMessage({ tone: 'rose', text: error.message })
     } finally {
@@ -137,7 +138,7 @@ export default function StockPage() {
 
       setReception({ ...reception, quantity: '', note: '', weight_kg: '' })
       await load()
-      setMessage({ tone: 'teal', text: `Réception enregistrée : +${quantity} ${supply.unit} de ${supply.name}.` })
+      toast.success(t('toast.reception', { name: supply.name }))
     } catch (error) {
       setMessage({ tone: 'rose', text: error.message })
     } finally {
@@ -151,30 +152,30 @@ export default function StockPage() {
     <div className="space-y-5">
       {message ? <Alert tone={message.tone}>{message.text}</Alert> : null}
       {!canWrite ? (
-        <Alert tone="amber">Consultation seule : le gérant saisit les réceptions et les rations.</Alert>
+        <Alert tone="amber">{t('stock.readOnly')}</Alert>
       ) : null}
 
       <div className="grid grid-cols-2 gap-3">
-        <Stat label="Articles" value={supplies.length} />
+        <Stat label={t('stock.items')} value={supplies.length} />
         <Stat
-          label="Sous le seuil"
+          label={t('stock.belowThreshold')}
           value={supplies.filter((item) => Number(item.stock) <= Number(item.min_stock)).length}
           tone="amber"
         />
-        <Stat label="Rationnaires" value={rationnaires} hint={formatDay(today)} />
+        <Stat label={t('dashboard.rationnaires')} value={rationnaires} hint={formatDay(today)} />
         <Stat
-          label="Achats locaux"
+          label={t('pam.localPurchases')}
           value={(localKg / 1000).toFixed(1) + ' t'}
-          hint={config.short}
+          hint={t(config.short)}
           tone="teal"
         />
       </div>
 
       <div className="grid gap-4">
         <Card>
-          <SectionTitle>Réception des vivres</SectionTitle>
+          <SectionTitle>{t('stock.reception')}</SectionTitle>
           <form onSubmit={submitReception} className="space-y-3">
-            <Field label="Article">
+            <Field label={t('stock.article')}>
               <Select
                 value={reception.supply_id}
                 onChange={(event) => setReception({ ...reception, supply_id: event.target.value })}
@@ -188,7 +189,7 @@ export default function StockPage() {
             </Field>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Quantité reçue">
+              <Field label={t('stock.quantityReceived')}>
                 <Input
                   type="number"
                   min="0.01"
@@ -199,7 +200,7 @@ export default function StockPage() {
                   disabled={!canWrite}
                 />
               </Field>
-              <Field label="Origine">
+              <Field label={t('stock.source')}>
                 <Select
                   value={reception.source}
                   onChange={(event) => setReception({ ...reception, source: event.target.value })}
@@ -207,7 +208,7 @@ export default function StockPage() {
                 >
                   {sources.map((source) => (
                     <option key={source.value} value={source.value}>
-                      {source.label}
+                      {t(source.label)}
                     </option>
                   ))}
                 </Select>
@@ -233,7 +234,7 @@ export default function StockPage() {
               </Field>
             ) : null}
 
-            <Field label="Observation">
+            <Field label={t('stock.observation')}>
               <Input
                 value={reception.note}
                 onChange={(event) => setReception({ ...reception, note: event.target.value })}
@@ -243,14 +244,14 @@ export default function StockPage() {
             </Field>
 
             <Button type="submit" className="w-full" disabled={busy || !canWrite}>
-              {busy ? 'Enregistrement…' : 'Enregistrer la réception'}
+              {busy ? t('common.loading') : t('stock.receptionSubmit')}
             </Button>
           </form>
         </Card>
 
         <Card>
-          <SectionTitle>Calculateur de rations</SectionTitle>
-          <Field label="Rationnaires du jour" hint="élèves présents ou réservés">
+          <SectionTitle>{t('stock.rationsCalc')}</SectionTitle>
+          <Field label={t('stock.rationnairesToday')} hint={t('stock.rationnairesHint')}>
             <Input
               type="number"
               min="1"
@@ -263,9 +264,9 @@ export default function StockPage() {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th className="px-2 py-1.5">Article</th>
-                  <th className="px-2 py-1.5 text-right">Besoin</th>
-                  <th className="px-2 py-1.5 text-right">Stock</th>
+                  <th className="px-2 py-1.5">{t('stock.article')}</th>
+                  <th className="px-2 py-1.5 text-right">{t('stock.need')}</th>
+                  <th className="px-2 py-1.5 text-right">{t('stock.stock')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -284,7 +285,7 @@ export default function StockPage() {
 
           {shortfall.length > 0 ? (
             <p className="mt-2 text-xs font-semibold text-coral-700">
-              Stock insuffisant : {shortfall.map((item) => item.name).join(', ')}
+              {t('stock.shortfall')} {shortfall.map((item) => item.name).join(', ')}
             </p>
           ) : null}
 
@@ -293,7 +294,7 @@ export default function StockPage() {
             disabled={busy || !canWrite || shortfall.length > 0}
             onClick={applyRations}
           >
-            {busy ? 'Traitement…' : `Sortir le stock pour ${rationnaires} repas`}
+            {busy ? t('common.loading') : t('stock.applyRations', { count: rationnaires })}
           </Button>
         </Card>
       </div>
@@ -321,7 +322,7 @@ export default function StockPage() {
             </Button>
           }
         >
-          État du stock
+          {t('stock.stockState')}
         </SectionTitle>
         <ul className="grid gap-2 sm:grid-cols-2">
           {supplies.map((item) => {

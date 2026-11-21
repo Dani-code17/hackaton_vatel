@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { addDays, fcfa, formatDay, todayISO } from '../../lib/format'
+import { useLanguage } from '../../i18n/language'
 import { Alert, Badge, Button, Card, Empty, Field, Input, SectionTitle, Spinner, Textarea } from '../../components/ui'
 
 const emptyForm = {
@@ -15,6 +16,7 @@ const emptyForm = {
 }
 
 export default function MenusPage() {
+  const { t } = useLanguage()
   const { profile } = useAuth()
   const [meals, setMeals] = useState([])
   const [loading, setLoading] = useState(true)
@@ -92,16 +94,16 @@ export default function MenusPage() {
     <div className="space-y-5">
       {message ? <Alert tone={message.tone}>{message.text}</Alert> : null}
       {!canWrite ? (
-        <Alert tone="amber">Consultation seule : seul le gérant peut modifier les menus.</Alert>
+        <Alert tone="amber">{t('menus.readOnly')}</Alert>
       ) : null}
 
       <div className="grid gap-4">
         {canWrite ? (
           <Card>
-            <SectionTitle>Ajouter un plat</SectionTitle>
+            <SectionTitle>{t('menus.add')}</SectionTitle>
             <form onSubmit={submit} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Date de service">
+                <Field label={t('menus.serviceDate')}>
                   <Input
                     type="date"
                     value={form.service_date}
@@ -109,7 +111,7 @@ export default function MenusPage() {
                     required
                   />
                 </Field>
-                <Field label="Prix (FCFA)">
+                <Field label={t('menus.price')}>
                   <Input
                     type="number"
                     min="0"
@@ -120,7 +122,7 @@ export default function MenusPage() {
                 </Field>
               </div>
 
-              <Field label="Nom du plat">
+              <Field label={t('menus.name')}>
                 <Input
                   value={form.name}
                   onChange={(event) => setForm({ ...form, name: event.target.value })}
@@ -129,7 +131,7 @@ export default function MenusPage() {
                 />
               </Field>
 
-              <Field label="Description">
+              <Field label={t('menus.description')}>
                 <Textarea
                   value={form.description}
                   onChange={(event) => setForm({ ...form, description: event.target.value })}
@@ -138,7 +140,7 @@ export default function MenusPage() {
               </Field>
 
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Portions">
+                <Field label={t('menus.portions')}>
                   <Input
                     type="number"
                     min="1"
@@ -146,7 +148,7 @@ export default function MenusPage() {
                     onChange={(event) => setForm({ ...form, capacity: event.target.value })}
                   />
                 </Field>
-                <Field label="Allergènes" hint="séparés par des virgules">
+                <Field label={t('menus.allergens')} hint="séparés par des virgules">
                   <Input
                     value={form.allergens}
                     onChange={(event) => setForm({ ...form, allergens: event.target.value })}
@@ -173,9 +175,9 @@ export default function MenusPage() {
         ) : null}
 
         <Card className={canWrite ? '' : ''}>
-          <SectionTitle>Menus à venir (2 semaines)</SectionTitle>
+          <SectionTitle>{t('menus.upcoming')}</SectionTitle>
           {meals.length === 0 ? (
-            <Empty title="Aucun plat publié" description="Ajoutez un plat pour ouvrir les réservations." />
+            <Empty title={t('menu.empty')} description="Ajoutez un plat pour ouvrir les réservations." />
           ) : (
             <ul className="divide-y divide-slate-100">
               {meals.map((meal) => (

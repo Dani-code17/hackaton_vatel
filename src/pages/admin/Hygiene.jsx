@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
+import { useLanguage } from '../../i18n/language'
 import { Alert, Badge, Button, Card, Empty, Field, SectionTitle, Spinner, Textarea } from '../../components/ui'
 
 const CHECKLIST = [
@@ -13,6 +14,7 @@ const CHECKLIST = [
 ]
 
 export default function HygienePage() {
+  const { t } = useLanguage()
   const { profile, user } = useAuth()
   const [checks, setChecks] = useState(CHECKLIST.map((label) => ({ label, ok: true })))
   const [note, setNote] = useState('')
@@ -109,7 +111,7 @@ export default function HygienePage() {
 
       <div className="grid gap-4">
         <Card>
-          <SectionTitle>Checklist du jour</SectionTitle>
+          <SectionTitle>{t('hygiene.checklistToday')}</SectionTitle>
           <form onSubmit={submit} className="space-y-3">
             <ul className="space-y-1.5">
               {checks.map((item, index) => (
@@ -129,7 +131,7 @@ export default function HygienePage() {
             </ul>
 
             <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
-              <span className="text-xs font-semibold uppercase text-slate-500">Score</span>
+              <span className="text-xs font-semibold uppercase text-slate-500">{t('hygiene.score')}</span>
               <span
                 className={
                   'text-lg font-bold ' +
@@ -140,7 +142,7 @@ export default function HygienePage() {
               </span>
             </div>
 
-            <Field label="Photo horodatée du magasin / cuisine">
+            <Field label={t('hygiene.photo')}>
               <input
                 type="file"
                 accept="image/*"
@@ -151,7 +153,7 @@ export default function HygienePage() {
               />
             </Field>
 
-            <Field label="Observation">
+            <Field label={t('stock.observation')}>
               <Textarea
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
@@ -172,9 +174,9 @@ export default function HygienePage() {
         </Card>
 
         <Card>
-          <SectionTitle>Historique des contrôles</SectionTitle>
+          <SectionTitle>{t('hygiene.history')}</SectionTitle>
           {history.length === 0 ? (
-            <Empty title="Aucun contrôle" description="Le premier contrôle apparaîtra ici." />
+            <Empty title={t('hygiene.empty')} description={t('hygiene.emptyHint')} />
           ) : (
             <ul className="divide-y divide-slate-100">
               {history.map((row) => (

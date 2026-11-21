@@ -135,6 +135,53 @@ Chaque univers possède sa palette, son vocabulaire et sa barre de navigation.
 La projection est calculée à partir des **achats locaux réellement saisis** (kg) rapportés au
 besoin journalier de l'établissement, plafonnée à 25 jours comme dans le référentiel PAM.
 
+### Bilingue FR / EN
+
+Un sélecteur **FR | EN** est présent dans l'en-tête de chaque univers (et sur l'écran de
+connexion). La langue est mémorisée dans le navigateur et appliquée instantanément à :
+
+- la navigation basse et le portail des modules ;
+- les titres d'écran, les boutons d'action et les statuts (`Réservé` → `Booked`) ;
+- les alertes allergènes du comptoir et de la carte ;
+- les libellés comptables (recette 25 F, versements 40 %, salaire cantinière 5 F) ;
+- les indicateurs PAM (couverture, projection, achats locaux) ;
+- le format des dates et des nombres (`samedi 21 novembre` → `Saturday 21 November`).
+
+L'implémentation tient dans `src/i18n/translations.js` (dictionnaire FR/EN),
+`src/i18n/language.js` (`translate`, `useLanguage`) et `src/context/LanguageProvider.jsx`.
+Une clé manquante en anglais retombe automatiquement sur le français.
+
+### Assistant IA « Vatel Smart Chef & Anti-Gaspillage »
+
+Deux cartes exploitent l'API officielle **DeepSeek** (`https://api.deepseek.com/chat/completions`,
+modèle `deepseek-chat`) via `src/services/deepseekAI.js` :
+
+| Carte | Où | Ce qu'elle fait |
+| --- | --- | --- |
+| **Vatel Smart Chef IA** | Carte du jour (élève / salarié) | Reçoit le profil d'allergies, le solde, les plats disponibles et la langue active ; renvoie le plat le plus sûr avec un score de compatibilité et une justification courte. Bouton « Actualiser le conseil IA ». |
+| **Prédiction IA Anti-Gaspillage** | Tableau de bord du gérant | Analyse l'historique des repas servis et les stocks pour estimer les rations du lendemain et lister les risques de rupture (riz, sardines, huile). |
+
+- La clé est lue depuis `VITE_DEEPSEEK_API_KEY` (voir `.env.example`) : **aucune clé n'est écrite
+  dans le code**, et `.env` est exclu de Git.
+- **Repli silencieux** : sans clé ou en cas d'échec réseau / CORS, un moteur local
+  (`localMealAdvice`, `localRationForecast`) prend le relais sans message d'erreur. La démo
+  fonctionne donc hors ligne, et la carte indique simplement la source (`DeepSeek` ou
+  `Moteur local`).
+
+### Qualité : tests unitaires métier
+
+`npm run test` (Vitest) exécute `src/tests/businessLogic.test.js` sur les règles pures de
+`src/lib/business.js` — les mêmes formules que les colonnes générées PostgreSQL :
+
+| Test | Vérification |
+| --- | --- |
+| Comptabilité EPP GBT | 200 rationnaires × 25 F = 5 000 F → 2 000 F versements (40 %), 1 000 F cantinière (5 F/plat), 2 000 F condiments |
+| Calculateur de rations | 140 rationnaires → 21 kg de riz, 35 boîtes de sardines, 2,1 L d'huile |
+| Partage ACMC | 1 000 F à 50 % → 500 F employeur / 500 F salarié, borné entre 0 et 100 % |
+| Allergies | un plat contenant un allergène déclaré est détecté (casse et espaces ignorés) et écarté de la recommandation |
+| Prévision | moyenne pondérée des services + détection des ruptures de stock |
+
+
 ---
 
 ## 🏗️ Architecture
@@ -201,13 +248,16 @@ hackaton_vatel/
 │   └── icons/                 # icônes PWA (192, 512, maskable, apple-touch)
 ├── src/
 │   ├── components/            # shell de navigation + kit UI partagé
-│   ├── context/               # AuthContext (session + profil applicatif)
-│   ├── lib/                   # client Supabase, formats (FCFA, dates, rôles)
+│   ├── context/               # Auth, univers (3 cantines), langue, toasts
+│   ├── i18n/                  # dictionnaire FR/EN + helper de traduction
+│   ├── lib/                   # client Supabase, formats, règles métier pures
 │   ├── pages/
 │   │   ├── eleve/             # menu, pass repas, compte
 │   │   ├── parent/            # suivi de l'enfant, historique
 │   │   ├── admin/             # cahier de gestion (8 onglets)
 │   │   └── dcs/               # supervision multi-écoles
+│   ├── services/              # assistant IA DeepSeek (+ repli local)
+│   ├── tests/                 # tests unitaires Vitest des règles métier
 │   ├── App.jsx                # routes et gardes par rôle
 │   └── index.css              # import Tailwind + thème
 ├── supabase/migrations/       # schéma, RLS, fonctions et données de démo
@@ -292,6 +342,7 @@ L'application est alors disponible sur **http://localhost:5173**.
 | `npm run build` | Build de production dans `dist/` |
 | `npm run preview` | Prévisualiser le build de production |
 | `npm run lint` | Analyse statique du code (oxlint) |
+| `npm run test` | Tests unitaires métier (Vitest, 14 cas) |
 
 ### Configuration Supabase
 
@@ -301,6 +352,7 @@ Les valeurs attendues dans `.env` sont :
 ```env
 VITE_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=sb_publishable_...   # ou l'ancienne clé anon (JWT)
+VITE_DEEPSEEK_API_KEY=sk-...                # facultatif : sans clé, moteur local
 ```
 
 Pour repartir d'un projet vierge :
@@ -389,7 +441,11 @@ Cinq profils sont préchargés. Mot de passe identique pour tous : **`Demo1234!`
 
 ## 🧪 Qualité
 
-- `npm run lint` (oxlint) et `npm run build` passent avant chaque commit.
+- `npm run lint` (oxlint), `npm run test` (Vitest) et `npm run build` passent avant chaque commit.
+- **14 tests unitaires** couvrent la comptabilité 25 F / 40 % / 5 F, le calculateur de rations
+  (riz, sardines, huile), le partage employeur / salarié ACMC et le blocage des allergènes.
+- Les formules testées sont extraites dans `src/lib/business.js` et reproduisent exactement les
+  colonnes générées de PostgreSQL : une seule source de vérité, vérifiable sans base de données.
 - Messages de commit conventionnels et explicites (`feat:`, `fix:`, `docs:`, `chore:`).
 - Accès aux données contrôlé par RLS, pas seulement par l'interface.
 - Calculs financiers délégués à PostgreSQL (colonnes générées) pour éviter toute divergence.

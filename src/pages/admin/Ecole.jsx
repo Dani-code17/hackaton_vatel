@@ -2,9 +2,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { formatDay, todayISO } from '../../lib/format'
+import { useLanguage } from '../../i18n/language'
 import { Alert, Badge, Button, Card, Field, Input, SectionTitle, Spinner, Stat } from '../../components/ui'
 
 export default function EcolePage() {
+  const { t } = useLanguage()
   const { profile } = useAuth()
   const [school, setSchool] = useState(null)
   const [attendance, setAttendance] = useState([])
@@ -120,10 +122,10 @@ export default function EcolePage() {
       {message ? <Alert tone={message.tone}>{message.text}</Alert> : null}
 
       <div className="grid grid-cols-3 gap-3">
-        <Stat label="Effectif" value={school?.enrolled_count ?? 0} />
-        <Stat label="Taux de présence" value={`${rate}%`} tone="teal" />
+        <Stat label={t('school.headcount')} value={school?.enrolled_count ?? 0} />
+        <Stat label={t('school.attendanceRate')} value={`${rate}%`} tone="teal" />
         <Stat
-          label="Validation"
+          label={t('school.validation')}
           value={school?.validated_at ? 'Signée' : 'En attente'}
           tone={school?.validated_at ? 'teal' : 'amber'}
         />
@@ -131,22 +133,22 @@ export default function EcolePage() {
 
       <div className="grid gap-4">
         <Card>
-          <SectionTitle>Fiche école</SectionTitle>
+          <SectionTitle>{t('school.sheet')}</SectionTitle>
           <dl className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <dt className="text-slate-500">Établissement</dt>
+              <dt className="text-slate-500">{t('school.establishment')}</dt>
               <dd className="font-semibold text-slate-800">{school?.name}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-slate-500">Ville</dt>
+              <dt className="text-slate-500">{t('school.city')}</dt>
               <dd className="font-medium text-slate-700">{school?.city}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-slate-500">Directeur</dt>
+              <dt className="text-slate-500">{t('school.headTeacher')}</dt>
               <dd className="font-medium text-slate-700">{school?.director_name}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-slate-500">Effectif saisi</dt>
+              <dt className="text-slate-500">{t('school.enrolled')}</dt>
               <dd className="font-medium text-slate-700">{school?.enrolled_count}</dd>
             </div>
           </dl>
@@ -161,7 +163,7 @@ export default function EcolePage() {
                 Signer la fiche école
               </Button>
             ) : (
-              <p className="text-xs text-amber-600">En attente de la signature du directeur.</p>
+              <p className="text-xs text-amber-600">{t('dashboard.pendingSignature')}</p>
             )}
           </div>
 
@@ -171,10 +173,10 @@ export default function EcolePage() {
         </Card>
 
         <Card>
-          <SectionTitle>Fiche d&apos;assiduité du jour</SectionTitle>
+          <SectionTitle>{t('school.attendance')}</SectionTitle>
           <form onSubmit={saveAttendance} className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Date">
+              <Field label={t('common.date')}>
                 <Input
                   type="date"
                   value={form.record_date}
@@ -182,7 +184,7 @@ export default function EcolePage() {
                   required
                 />
               </Field>
-              <Field label="Inscrits">
+              <Field label={t('school.registered')}>
                 <Input
                   type="number"
                   min="0"
@@ -192,7 +194,7 @@ export default function EcolePage() {
                 />
               </Field>
             </div>
-            <Field label="Présents">
+            <Field label={t('school.present')}>
               <Input
                 type="number"
                 min="0"

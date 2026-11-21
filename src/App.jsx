@@ -1,5 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { LanguageProvider } from './context/LanguageProvider'
+import { ToastProvider } from './context/ToastProvider'
+import { useLanguage } from './i18n/language'
 import { UniverseProvider, useUniverse } from './context/UniverseContext'
 import { MobileShell } from './components/Layouts'
 import UniverseShell from './components/UniverseShell'
@@ -21,16 +24,17 @@ import EcolePage from './pages/admin/Ecole'
 import SupervisionPage from './pages/dcs/Supervision'
 
 const PARENT_NAV = [
-  { to: '/parent', label: 'Suivi', icon: '👨‍👩‍👧', end: true },
-  { to: '/parent/historique', label: 'Historique', icon: '🧾' },
+  { to: '/parent', labelKey: 'nav.suivi', icon: 'groups', end: true },
+  { to: '/parent/historique', labelKey: 'nav.historique', icon: 'receipt_long' },
 ]
 
 function Loader() {
+  const { t } = useLanguage()
   return (
     <div className="flex min-h-dvh items-center justify-center bg-shell">
       <div className="flex items-center gap-2 text-sm text-slate-500">
         <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-brand-700" />
-        Ouverture de la cantine…
+        {t('common.loading')}
       </div>
     </div>
   )
@@ -68,11 +72,13 @@ function EleveLayout() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <UniverseProvider>
-        <BrowserRouter>
-          <div className="min-h-dvh bg-slate-200">
-            <div className="relative mx-auto min-h-dvh w-full max-w-[430px] overflow-x-hidden bg-shell shadow-2xl">
+    <ToastProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <UniverseProvider>
+            <BrowserRouter>
+              <div className="min-h-dvh bg-slate-200">
+                <div className="theme-shift relative mx-auto min-h-dvh w-full max-w-[430px] overflow-x-hidden bg-shell shadow-2xl">
               <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<HomeRedirect />} />
@@ -95,7 +101,7 @@ export default function App() {
               path="/parent"
               element={
                 <Guard roles={['parent']}>
-                  <MobileShell nav={PARENT_NAV} title="Espace parent" />
+                  <MobileShell nav={PARENT_NAV} />
                 </Guard>
               }
             >
@@ -134,10 +140,12 @@ export default function App() {
 
             <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
-            </div>
-          </div>
-        </BrowserRouter>
-      </UniverseProvider>
-    </AuthProvider>
+                </div>
+              </div>
+            </BrowserRouter>
+          </UniverseProvider>
+        </AuthProvider>
+      </LanguageProvider>
+    </ToastProvider>
   )
 }

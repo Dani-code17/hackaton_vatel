@@ -5,6 +5,7 @@ import { useUniverse } from '../context/UniverseContext'
 import { supabase } from '../lib/supabase'
 import { cx } from '../lib/format'
 import { UNIVERSE_ORDER, UNIVERSES } from '../lib/universes'
+import { useLanguage } from '../i18n/language'
 
 function NineDots() {
   return (
@@ -16,7 +17,7 @@ function NineDots() {
   )
 }
 
-function UniverseCard({ universe, active, disabled, onSelect }) {
+function UniverseCard({ universe, active, disabled, onSelect, t }) {
   return (
     <button
       type="button"
@@ -41,18 +42,18 @@ function UniverseCard({ universe, active, disabled, onSelect }) {
           <div>
             <p className="text-sm font-bold text-slate-900">{universe.name}</p>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-              {universe.tagline}
+              {t(universe.taglineKey)}
             </p>
           </div>
         </div>
         {active ? (
           <span className="rounded-full bg-brand-900 px-2 py-0.5 text-[10px] font-semibold text-white">
-            Actuel
+            {t('universe.current')}
           </span>
         ) : null}
       </div>
 
-      <p className="mt-2 text-xs leading-relaxed text-slate-600">{universe.description}</p>
+      <p className="mt-2 text-xs leading-relaxed text-slate-600">{t(universe.descriptionKey)}</p>
 
       <div className="mt-3 flex items-center justify-between">
         <div className="flex items-center gap-1">
@@ -66,7 +67,7 @@ function UniverseCard({ universe, active, disabled, onSelect }) {
           <span className="ml-1 text-[10px] text-slate-400">{universe.paletteNote}</span>
         </div>
         <span className="text-xs font-semibold text-brand-900 opacity-0 transition group-hover:opacity-100">
-          Ouvrir →
+          {t('common.open')} →
         </span>
       </div>
     </button>
@@ -76,6 +77,7 @@ function UniverseCard({ universe, active, disabled, onSelect }) {
 export default function AppSwitcher() {
   const { profile } = useAuth()
   const { universe: current } = useUniverse()
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const [pending, setPending] = useState(null)
   const [error, setError] = useState(null)
@@ -107,7 +109,7 @@ export default function AppSwitcher() {
       if (listError) throw listError
 
       const school = (schools ?? []).find((row) => row.model === target.model)
-      if (!school) throw new Error("Cet univers n'est pas disponible pour votre compte.")
+      if (!school) throw new Error(t('universe.unavailable'))
 
       const { error: switchError } = await supabase.rpc('switch_active_school', {
         p_school: school.id,
@@ -127,8 +129,8 @@ export default function AppSwitcher() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label="Changer d'univers"
-        title="Changer d'univers"
+        aria-label={t('universe.switcher')}
+        title={t('universe.switcher')}
         className="grid h-9 w-9 place-items-center rounded-xl bg-white/10 text-white ring-1 ring-white/20 transition hover:bg-white/20"
       >
         <NineDots />
@@ -143,9 +145,9 @@ export default function AppSwitcher() {
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
                       Super-App
                     </p>
-                    <h2 className="text-lg font-bold text-slate-900">Sélecteur d&apos;univers</h2>
+                    <h2 className="text-lg font-bold text-slate-900">{t('universe.switcher')}</h2>
                     <p className="mt-0.5 text-xs text-slate-500">
-                      Trois cantines, trois façons de travailler.
+                      {t('universe.switcherHint')}
                     </p>
                   </div>
                   <button
@@ -172,12 +174,13 @@ export default function AppSwitcher() {
                       active={id === current}
                       disabled={Boolean(pending)}
                       onSelect={select}
+                      t={t}
                     />
                   ))}
                 </div>
 
                 <p className="mt-4 text-center text-[11px] text-slate-400">
-                  Les données restent cloisonnées par établissement (RLS Supabase).
+                  {t('universe.rls')}
                 </p>
               </div>
             </div>,
@@ -190,7 +193,7 @@ export default function AppSwitcher() {
             <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-4 bg-slate-950/90 text-white">
               <span className="h-10 w-10 animate-spin rounded-full border-2 border-white/25 border-t-white" />
               <div className="text-center">
-                <p className="text-sm font-semibold">Chargement de l&apos;espace…</p>
+                <p className="text-sm font-semibold">{t('universe.loading')}</p>
                 <p className="mt-1 text-xs text-white/60">{pending.name}</p>
               </div>
             </div>,
