@@ -2,17 +2,21 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { addDays, fcfa, formatDay, todayISO } from '../../lib/format'
+import MealVisual from '../../components/MealVisual'
 import { useLanguage } from '../../i18n/language'
-import { Alert, Badge, Button, Card, Empty, Field, Input, SectionTitle, Spinner, Textarea } from '../../components/ui'
+import { Alert, Badge, Button, Card, Empty, Field, Icon, Input, SectionTitle, Select, Spinner, Textarea } from '../../components/ui'
 
 const emptyForm = {
   service_date: todayISO(),
   name: '',
   description: '',
-  price: 25,
+  price: 1500,
   capacity: 150,
   vegetarian: false,
   allergens: '',
+  base_label: 'Riz',
+  protein_label: '',
+  photo_url: '',
 }
 
 export default function MenusPage() {
@@ -22,6 +26,7 @@ export default function MenusPage() {
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
+  const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState(null)
   const [busy, setBusy] = useState(false)
 
@@ -69,6 +74,9 @@ export default function MenusPage() {
               capacity: Number(form.capacity),
               vegetarian: form.vegetarian,
               allergens,
+              base_label: form.base_label || null,
+              protein_label: form.protein_label.trim() || null,
+              photo_url: form.photo_url || null,
             })
             .eq('id', editingId)
         : await supabase.from('meals').insert({
@@ -80,6 +88,9 @@ export default function MenusPage() {
             capacity: Number(form.capacity),
             vegetarian: form.vegetarian,
             allergens,
+            base_label: form.base_label || null,
+            protein_label: form.protein_label.trim() || null,
+            photo_url: form.photo_url || null,
           })
       if (error) throw error
       setForm({ ...emptyForm, service_date: form.service_date })
@@ -104,6 +115,9 @@ export default function MenusPage() {
       capacity: meal.capacity,
       vegetarian: Boolean(meal.vegetarian),
       allergens: (meal.allergens ?? []).join(', '),
+      base_label: meal.base_label ?? 'Riz',
+      protein_label: meal.protein_label ?? '',
+      photo_url: meal.photo_url ?? '',
     })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -157,6 +171,28 @@ export default function MenusPage() {
                 </Field>
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <Field label={t('menus.base')} hint={t('menus.baseHint')}>
+                  <Select
+                    value={form.base_label}
+                    onChange={(event) => setForm({ ...form, base_label: event.target.value })}
+                  >
+                    {['Riz', 'Frites', 'Attiéké', 'Aloco', 'Gari'].map((base) => (
+                      <option key={base} value={base}>
+                        {base}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field label={t('menus.protein')} hint={t('menus.proteinHint')}>
+                  <Input
+                    value={form.protein_label}
+                    onChange={(event) => setForm({ ...form, protein_label: event.target.value })}
+                    placeholder="Sauce graine, Poulet, Poisson…"
+                  />
+                </Field>
+              </div>
+
               <Field label={t('menus.name')}>
                 <Input
                   value={form.name}
@@ -165,6 +201,60 @@ export default function MenusPage() {
                   required
                 />
               </Field>
+
+              <div>
+                <p className="mb-1.5 font-display text-[10px] font-bold uppercase tracking-[0.09em] text-slate-500">
+                  {t('menus.photo')}
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="h-16 w-24 shrink-0 overflow-hidden rounded-xl bg-slate-100">
+                    <MealVisual meal={{ ...form, name: form.name || form.base_label }} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <label className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-xl bg-brand-100 px-3 font-display text-[11px] font-bold text-brand-900">
+                      <Icon name="photo_camera" className="text-[16px]" />
+                      {uploading ? t('common.loading') : t('menus.upload')}
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        className="hidden"
+                        onChange={async (event) => {
+                          const file = event.target.files?.[0]
+                          if (!file) return
+                          setUploading(true)
+                          try {
+                            const ext = file.name.split('.').pop() ?? 'jpg'
+                            const path = `${profile.school_id}/${Date.now()}.${ext}`
+                            const { error: uploadError } = await supabase.storage
+                              .from('meals')
+                              .upload(path, file, { upsert: true, contentType: file.type })
+                            if (uploadError) throw uploadError
+                            const { data: publicUrl } = supabase.storage
+                              .from('meals')
+                              .getPublicUrl(path)
+                            setForm((current) => ({ ...current, photo_url: publicUrl.publicUrl }))
+                          } catch (uploadFailure) {
+                            setMessage({ tone: 'rose', text: uploadFailure.message })
+                          } finally {
+                            setUploading(false)
+                          }
+                        }}
+                      />
+                    </label>
+                    {form.photo_url ? (
+                      <button
+                        type="button"
+                        onClick={() => setForm({ ...form, photo_url: '' })}
+                        className="ml-2 text-[10px] font-semibold text-coral-700 underline"
+                      >
+                        {t('menus.removePhoto')}
+                      </button>
+                    ) : (
+                      <p className="mt-1 text-[10px] text-slate-400">{t('menus.photoHint')}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
 
               <Field label={t('menus.description')}>
                 <Textarea

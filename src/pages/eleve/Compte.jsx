@@ -100,6 +100,8 @@ export default function ComptePage() {
       await refresh()
       await load()
 
+      // Référence de reçu affichée à l'utilisateur (le grand livre garde son propre identifiant)
+      // eslint-disable-next-line react/purity
       const reference = `RC-${Date.now().toString(36).toUpperCase().slice(-6)}`
       setReceipt({
         reference,

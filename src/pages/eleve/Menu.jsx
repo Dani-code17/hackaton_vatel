@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase'
 import { addDays, cx, fcfa, formatDay, todayISO } from '../../lib/format'
 import { allergyConflicts } from '../../lib/business'
 import { useLanguage } from '../../i18n/language'
+import MealVisual from '../../components/MealVisual'
 import SmartChefCard from '../../components/SmartChefCard'
 import { Alert, Badge, Button, Card, Empty, Icon, Spinner } from '../../components/ui'
 
@@ -313,9 +314,9 @@ export default function MenuPage() {
 
             return (
               <Card key={meal.id} className="overflow-hidden">
-                <div className="relative h-20 bg-gradient-to-br from-brand-900 via-brand-700 to-brand-500">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Icon name="restaurant" className="text-[40px] text-white/25" filled />
+                <div className="relative h-24">
+                  <div className="absolute inset-0">
+                    <MealVisual meal={meal} />
                   </div>
                   <div className="absolute right-2 top-2 flex flex-wrap justify-end gap-1">
                     {meal.vegetarian ? <Badge tone="sky">{t('menu.vegetarian')}</Badge> : null}
